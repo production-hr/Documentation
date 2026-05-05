@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ComfyUI: Building Your First Workflow — Archive</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Guides</span>
+        <span>2026-05-05</span>
+        <span>10 min read</span>
+      </div>
+
+      <h1 class="doc-title">ComfyUI: Building Your First Workflow</h1>
+
+      <p class="doc-lede">
+        Node-by-node construction of the classic SDXL checkpoint workflow, the Flux.1 dev
+        split-component workflow, img2img modification, and a reference table of key nodes.
+      </p>
+
+      <article class="prose">
+
+        <p class="dropcap">
+          Two workflows follow — the classic SDXL checkpoint workflow (simplest, all-in-one
+          file) and the Flux.1 dev workflow (modern, split components). Build them node by
+          node in order. Right-click on empty canvas → Add Node to find each node by the path
+          listed in the table.
+        </p>
+
+        <h2 id="workflow-sdxl">Workflow A — SDXL Checkpoint (txt2img)</h2>
+
+        <p>
+          The simplest possible workflow. One checkpoint file contains the model, text
+          encoders, and VAE all baked together. Seven nodes total.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Node</th>
+              <th>Key Settings</th>
+              <th>What To Do</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Load Checkpoint</td>
+              <td><code>ckpt_name</code>: your SDXL .safetensors</td>
+              <td>Add Node → loaders → Load Checkpoint. Select your SDXL checkpoint from the dropdown. This node outputs MODEL (yellow), CLIP (teal), and VAE (pink) — three separate outputs.</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>CLIP Text Encode (Positive)</td>
+              <td><code>text</code>: your prompt</td>
+              <td>Add Node → conditioning → CLIP Text Encode. Connect CLIP output from Load Checkpoint → clip input. Type your positive prompt in the text field. Outputs CONDITIONING (orange).</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>CLIP Text Encode (Negative)</td>
+              <td><code>text</code>: blurry, low quality, watermark, deformed</td>
+              <td>Add a second CLIP Text Encode for the negative prompt. Connect the same CLIP output to this node's clip input (one output → two inputs is fine).</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>Empty Latent Image</td>
+              <td><code>width</code>: 1024 / <code>height</code>: 1024 / <code>batch_size</code>: 1</td>
+              <td>Add Node → latent → Empty Latent Image. Set 1024×1024 for SDXL. Must be multiples of 64. Outputs LATENT (purple).</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>KSampler</td>
+              <td><code>steps</code>: 20 / <code>cfg</code>: 7.0 / <code>sampler</code>: dpmpp_2m / <code>scheduler</code>: karras / <code>denoise</code>: 1.0</td>
+              <td>Add Node → sampling → KSampler. Connect: model (yellow) from Load Checkpoint, positive/negative (orange) from both CLIP Encode nodes, latent (purple) from Empty Latent Image. Outputs a denoised LATENT.</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>VAE Decode</td>
+              <td>—</td>
+              <td>Add Node → latent → VAE Decode. Connect: samples (purple LATENT) from KSampler, vae (pink) from Load Checkpoint. Outputs IMAGE (red).</td>
+            </tr>
+            <tr>
+              <td>7</td>
+              <td>Save Image</td>
+              <td><code>filename_prefix</code>: ComfyUI</td>
+              <td>Add Node → image → Save Image. Connect images (red) from VAE Decode. <kbd>Ctrl + Enter</kbd> to queue and run.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--warn">
+          <div class="callout__label">VAE Colour Issue</div>
+          If your output looks washed out or has wrong colours, your checkpoint's baked VAE
+          has the known SDXL FP16 precision issue. Download
+          <code>sdxl-vae-fp16-fix.safetensors</code>, place it in <code>models/vae/</code>,
+          add a Load VAE node, and connect it to VAE Decode instead of the checkpoint's VAE
+          output.
+        </div>
+
+        <h2 id="workflow-flux">Workflow B — Flux.1 dev (txt2img)</h2>
+
+        <p>
+          Flux uses split components: the diffusion model, two text encoders, and a VAE are
+          separate files. This workflow requires all four files downloaded first. See the
+          Reference doc Section 5 for folder placement.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Node</th>
+              <th>Key Settings</th>
+              <th>What To Do</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Load Diffusion Model</td>
+              <td><code>unet_name</code>: flux1-dev.safetensors / <code>dtype</code>: default</td>
+              <td>Add Node → loaders → Load Diffusion Model. Select <code>flux1-dev.safetensors</code> (or your GGUF). Outputs MODEL (yellow).</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>DualCLIPLoader</td>
+              <td><code>clip_name1</code>: t5xxl_fp8_e4m3fn.safetensors / <code>clip_name2</code>: clip_l.safetensors / <code>type</code>: flux</td>
+              <td>Add Node → loaders → DualCLIPLoader. Select T5-XXL for clip_name1 and CLIP-L for clip_name2. Set type to <code>flux</code>. Outputs CLIP (teal).</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Load VAE</td>
+              <td><code>vae_name</code>: ae.safetensors</td>
+              <td>Add Node → loaders → Load VAE. Select <code>ae.safetensors</code> (Flux.1 VAE). Outputs VAE (pink).</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>CLIPTextEncodeFlux</td>
+              <td><code>clip_l</code>: short style hint / <code>t5xxl</code>: your full prompt / <code>guidance</code>: 3.5</td>
+              <td>Add Node → conditioning → CLIPTextEncodeFlux. Connect CLIP from DualCLIPLoader. Write a brief style hint in clip_l and your full descriptive prompt in t5xxl. No negative prompt needed.</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>Empty Latent Image</td>
+              <td><code>width</code>: 1024 / <code>height</code>: 1024 / <code>batch_size</code>: 1</td>
+              <td>Same as Workflow A. Multiples of 16 for Flux (not 64). 1024×1024 is the standard starting size.</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>KSampler</td>
+              <td><code>steps</code>: 20 / <code>cfg</code>: 1.0 / <code>sampler</code>: euler / <code>scheduler</code>: simple / <code>denoise</code>: 1.0</td>
+              <td>Connect model (yellow), positive conditioning (orange), latent (purple). Set cfg to 1.0 — Flux has guidance distilled in; higher CFG produces artefacts. Use scheduler: simple or sgm_uniform, not karras/dpmpp.</td>
+            </tr>
+            <tr>
+              <td>7</td>
+              <td>VAE Decode</td>
+              <td>—</td>
+              <td>Connect samples from KSampler, vae from Load VAE.</td>
+            </tr>
+            <tr>
+              <td>8</td>
+              <td>Save Image</td>
+              <td>—</td>
+              <td>Connect and queue as before. <kbd>Ctrl + Enter</kbd>.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          <div class="callout__label">GGUF Flux models</div>
+          For GGUF Flux models (<code>flux1-dev-Q4_K_M.gguf</code>), use the
+          <strong>Unet Loader (GGUF)</strong> node instead of Load Diffusion Model. This
+          requires the ComfyUI-GGUF custom node — install via Manager. Everything else in
+          the workflow stays the same.
+        </div>
+
+        <h2 id="img2img">img2img — Modifying an Existing Image</h2>
+
+        <p>
+          img2img starts from an existing image instead of empty noise. The key change vs
+          txt2img: replace Empty Latent Image with Load Image + VAE Encode, and set denoise
+          below 1.0 on the KSampler.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Change from txt2img</th>
+              <th>What to do</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Add Load Image node</td>
+              <td>Add Node → image → Load Image. Upload or drag your source image onto the node.</td>
+            </tr>
+            <tr>
+              <td>Add VAE Encode node</td>
+              <td>Add Node → latent → VAE Encode. Connect: pixels (red IMAGE) from Load Image → pixels input. Connect vae (pink) from Load VAE or Load Checkpoint → vae input. Outputs LATENT (purple).</td>
+            </tr>
+            <tr>
+              <td>Replace Empty Latent</td>
+              <td>Disconnect Empty Latent Image from KSampler. Connect VAE Encode's latent output to KSampler's latent input instead.</td>
+            </tr>
+            <tr>
+              <td>Set denoise strength</td>
+              <td>On KSampler, set <code>denoise</code> to 0.4–0.7 for typical img2img. Lower = preserves more of the original.</td>
+            </tr>
+            <tr>
+              <td>Match resolution</td>
+              <td>The KSampler works at whatever resolution the VAE Encode produced. No need to set width/height separately — it inherits from the input image.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="key-nodes">Key Nodes Quick Reference</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Node</th>
+              <th>Found Under</th>
+              <th>When to Use It</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Load Checkpoint</td>
+              <td>loaders</td>
+              <td>SDXL and any all-in-one checkpoint file. Contains model + CLIP + VAE baked together.</td>
+            </tr>
+            <tr>
+              <td>Load Diffusion Model</td>
+              <td>loaders</td>
+              <td>Flux, Qwen-Image, Z-Image, SD3 — any model where diffusion model, encoders, and VAE are separate files.</td>
+            </tr>
+            <tr>
+              <td>DualCLIPLoader</td>
+              <td>loaders</td>
+              <td>Flux.1 (needs both CLIP-L and T5-XXL simultaneously). Set <code>type: flux</code>.</td>
+            </tr>
+            <tr>
+              <td>CLIPLoader</td>
+              <td>loaders</td>
+              <td>Single-encoder models: Flux.2 (Mistral-3), Z-Image (Qwen3-4B), Qwen-Image (Qwen-VL).</td>
+            </tr>
+            <tr>
+              <td>Load VAE</td>
+              <td>loaders</td>
+              <td>Always required for Flux/modern models. Place <code>ae.safetensors</code> in <code>models/vae/</code>.</td>
+            </tr>
+            <tr>
+              <td>CLIPTextEncodeFlux</td>
+              <td>conditioning</td>
+              <td>Flux.1 and Flux.1 Kontext only. Has separate <code>clip_l</code> and <code>t5xxl</code> fields plus a guidance parameter.</td>
+            </tr>
+            <tr>
+              <td>CLIP Text Encode</td>
+              <td>conditioning</td>
+              <td>SDXL and older models. Single text field. Use two — one positive, one negative.</td>
+            </tr>
+            <tr>
+              <td>Empty Latent Image</td>
+              <td>latent</td>
+              <td>txt2img starting point. Sets output resolution.</td>
+            </tr>
+            <tr>
+              <td>KSampler</td>
+              <td>sampling</td>
+              <td>Standard sampler for all models. Use SamplerCustomAdvanced for more control (custom noise, sigmas).</td>
+            </tr>
+            <tr>
+              <td>FluxGuidance</td>
+              <td>conditioning</td>
+              <td>Flux-specific guidance conditioning node. Use instead of CFG scale. Set <code>guidance: 3.5</code> for Flux dev.</td>
+            </tr>
+            <tr>
+              <td>VAE Decode</td>
+              <td>latent</td>
+              <td>Converts final latent to pixel image. Always the last step before Save Image.</td>
+            </tr>
+            <tr>
+              <td>VAE Decode (Tiled)</td>
+              <td>latent</td>
+              <td>Use for very large images (2048px+) to avoid VRAM spikes during decode.</td>
+            </tr>
+            <tr>
+              <td>Load LoRA</td>
+              <td>loaders</td>
+              <td>Stack a LoRA on top of the base model. Connect between Load Checkpoint/Diffusion Model and KSampler. Strength 0.5–1.0.</td>
+            </tr>
+            <tr>
+              <td>ControlNet Apply</td>
+              <td>conditioning</td>
+              <td>Add structural guidance (depth, edges, pose). Requires a ControlNet model loaded via Load ControlNet Model.</td>
+            </tr>
+            <tr>
+              <td>Load Image</td>
+              <td>image</td>
+              <td>Load a source image for img2img, inpainting, or reference workflows.</td>
+            </tr>
+            <tr>
+              <td>Save Image</td>
+              <td>image</td>
+              <td>Save output to <code>ComfyUI/output/</code> folder. Embeds workflow JSON in the PNG metadata.</td>
+            </tr>
+            <tr>
+              <td>Preview Image</td>
+              <td>image</td>
+              <td>Shows image in the canvas without saving to disk. Useful for intermediate steps.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <hr />
+
+        <p>
+          For hardware limits and VRAM strategies, continue to
+          <a href="comfyui-vram.html">VRAM &amp; Hardware Management</a>.
+        </p>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-05</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

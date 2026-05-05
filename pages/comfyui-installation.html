@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ComfyUI: Installation &amp; Setup — Archive</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Guides</span>
+        <span>2026-05-05</span>
+        <span>8 min read</span>
+      </div>
+
+      <h1 class="doc-title">ComfyUI: Installation &amp; Setup</h1>
+
+      <p class="doc-lede">
+        Step-by-step installation on Windows with CUDA, the essential Manager extension,
+        every useful launch flag, and how to keep ComfyUI up to date.
+      </p>
+
+      <article class="prose">
+
+        <p class="dropcap">
+          This guide uses a Python virtual environment install on Windows with CUDA — the
+          recommended local method. A venv keeps ComfyUI's dependencies isolated from your
+          system Python and makes updates straightforward. If you're on Linux or Mac the
+          clone-and-venv steps are identical; only the activation command differs.
+        </p>
+
+        <h2 id="prerequisites">Prerequisites</h2>
+
+        <p>
+          Confirm these are in place before running a single command. Missing any one of them
+          is the most common cause of a failed install.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Requirement</th>
+              <th>Minimum Version</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Python</td>
+              <td>3.10 – 3.12</td>
+              <td>3.11 is the most tested. Avoid 3.13+ — some dependencies lag. Download from python.org; check <em>Add to PATH</em> during install.</td>
+            </tr>
+            <tr>
+              <td>Git</td>
+              <td>Any recent version</td>
+              <td>Required to clone ComfyUI and install extensions. Download from git-scm.com.</td>
+            </tr>
+            <tr>
+              <td>NVIDIA GPU</td>
+              <td>8 GB VRAM minimum</td>
+              <td>6 GB is possible with quantised models (GGUF Q4). 16 GB+ recommended for Flux.1. AMD via ROCm is supported but less tested.</td>
+            </tr>
+            <tr>
+              <td>CUDA Toolkit</td>
+              <td>Matching your GPU driver</td>
+              <td>Installed automatically with PyTorch. Check your driver's max supported CUDA version with <code>nvidia-smi</code>.</td>
+            </tr>
+            <tr>
+              <td>Disk space</td>
+              <td>20–60 GB free</td>
+              <td>ComfyUI itself is small. Models are large: SDXL ~6 GB, Flux.1 dev ~24 GB (BF16), ~9 GB (Q4 GGUF).</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="install-steps">Install Steps</h2>
+
+        <p>
+          Run the following in PowerShell or Windows Terminal. Each block is a logical
+          step — complete them in order.
+        </p>
+
+        <h3>Step 1 — Clone ComfyUI</h3>
+        <pre><code>git clone https://github.com/comfyanonymous/ComfyUI.git
+cd ComfyUI</code></pre>
+
+        <h3>Step 2 — Create and activate a virtual environment</h3>
+        <pre><code>python -m venv venv
+.\venv\Scripts\activate</code></pre>
+
+        <div class="callout callout--note">
+          <div class="callout__label">Note</div>
+          Your prompt will show <code>(venv)</code> when the environment is active. You must
+          activate it every time you open a new terminal before launching ComfyUI.
+        </div>
+
+        <h3>Step 3 — Check your CUDA version</h3>
+        <pre><code>nvidia-smi</code></pre>
+        <p>
+          Look for <em>CUDA Version: XX.X</em> in the top-right of the output. This is the
+          maximum CUDA version your driver supports.
+        </p>
+
+        <h3>Step 4 — Install PyTorch</h3>
+        <p>
+          Get the exact command for your CUDA version at pytorch.org/get-started/locally.
+        </p>
+        <pre><code># Example for CUDA 12.1:
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+# Example for CUDA 11.8:
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118</code></pre>
+
+        <h3>Step 5 — Install ComfyUI requirements</h3>
+        <pre><code>pip install -r requirements.txt</code></pre>
+
+        <h3>Step 6 — Optional: SageAttention + Triton</h3>
+        <pre><code>pip install sageattention
+pip install -U triton-windows</code></pre>
+
+        <div class="callout callout--note">
+          <div class="callout__label">Note</div>
+          SageAttention provides faster attention computation on modern GPUs.
+          <code>triton-windows</code> is a Windows-compatible build of Triton — required by
+          SageAttention on Windows. If the install fails, ComfyUI still works without them.
+        </div>
+
+        <h3>Step 7 — First launch</h3>
+        <pre><code>python main.py</code></pre>
+        <p>
+          ComfyUI will print a local URL (default: <code>http://127.0.0.1:8188</code>). Open it
+          in your browser. On first run it may download a small default checkpoint.
+        </p>
+
+        <h2 id="manager">ComfyUI Manager</h2>
+
+        <p>
+          ComfyUI Manager is the essential extension for installing custom nodes, updating
+          ComfyUI, and downloading models. Install it once, then use it for everything else.
+        </p>
+
+        <pre><code>cd custom_nodes
+git clone https://github.com/ltdrdata/ComfyUI-Manager.git
+cd ..
+.\venv\Scripts\activate
+pip install -r custom_nodes\ComfyUI-Manager\requirements.txt
+python main.py</code></pre>
+
+        <p>
+          After relaunch, a <strong>Manager</strong> button appears in the ComfyUI menu bar.
+          Use it to install missing nodes (when a workflow requires them), update all nodes,
+          and browse and install models from CivitAI and Hugging Face.
+        </p>
+
+        <h2 id="launch-flags">Useful Launch Flags</h2>
+
+        <p>
+          Pass these flags to <code>python main.py</code> to change ComfyUI's behaviour at
+          startup. Multiple flags can be combined.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Flag</th>
+              <th>Example</th>
+              <th>What It Does</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>--port</code></td>
+              <td><code>python main.py --port 8189</code></td>
+              <td>Change the port ComfyUI listens on. Useful if 8188 is taken.</td>
+            </tr>
+            <tr>
+              <td><code>--listen</code></td>
+              <td><code>python main.py --listen</code></td>
+              <td>Accept connections from other devices on your network (not just localhost). Required for tablet/phone access.</td>
+            </tr>
+            <tr>
+              <td><code>--lowvram</code></td>
+              <td><code>python main.py --lowvram</code></td>
+              <td>Aggressive VRAM offloading to RAM. Slower but lets you run large models on limited VRAM (6–8 GB). Prefer <code>--medvram</code> first.</td>
+            </tr>
+            <tr>
+              <td><code>--medvram</code></td>
+              <td><code>python main.py --medvram</code></td>
+              <td>Moderate VRAM offloading. Good balance for 8–10 GB GPUs running SDXL. Less speed penalty than <code>--lowvram</code>.</td>
+            </tr>
+            <tr>
+              <td><code>--fp8_e4m3fn</code></td>
+              <td><code>python main.py --fp8_e4m3fn</code></td>
+              <td>Load model weights in FP8 format. Halves VRAM usage vs BF16 with minor quality loss. Requires Ampere GPU (RTX 30xx+).</td>
+            </tr>
+            <tr>
+              <td><code>--fp16-vae</code></td>
+              <td><code>python main.py --fp16-vae</code></td>
+              <td>Run VAE in FP16. Saves VRAM during decode. Can cause NaN errors on some models — use the fp16-fix VAE instead if problems occur.</td>
+            </tr>
+            <tr>
+              <td><code>--disable-xformers</code></td>
+              <td><code>python main.py --disable-xformers</code></td>
+              <td>Disable xformers attention. Try this if you get crashes or artefacts with xformers installed.</td>
+            </tr>
+            <tr>
+              <td><code>--preview-method latent2rgb</code></td>
+              <td><code>python main.py --preview-method latent2rgb</code></td>
+              <td>Show fast latent previews during generation without decoding through VAE. Recommended — much faster feedback with minimal overhead.</td>
+            </tr>
+            <tr>
+              <td><code>--fast</code></td>
+              <td><code>python main.py --fast</code></td>
+              <td>Enable experimental speed optimisations. May cause minor quality changes. Worth testing on your hardware.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          <div class="callout__label">Tip</div>
+          Create a <code>launch.bat</code> file in your ComfyUI folder with your preferred
+          flags so you don't have to type them every time:
+          <pre><code>echo .\venv\Scripts\activate &amp;&amp; python main.py --preview-method latent2rgb --fp8_e4m3fn > launch.bat</code></pre>
+        </div>
+
+        <h2 id="updating">Updating ComfyUI</h2>
+
+        <p>
+          Run from the ComfyUI folder with venv active:
+        </p>
+
+        <pre><code>git pull
+.\venv\Scripts\activate
+pip install -r requirements.txt</code></pre>
+
+        <p>
+          Or use the Manager button → <strong>Update ComfyUI</strong>. Custom nodes can be
+          updated individually via Manager → <strong>Update All</strong>. After major updates,
+          re-run <code>pip install -r requirements.txt</code> to catch any new dependencies.
+        </p>
+
+        <hr />
+
+        <p>
+          With ComfyUI running, continue to the
+          <a href="comfyui-interface.html">Interface Walkthrough</a> to learn how to navigate
+          the canvas and understand the node graph.
+        </p>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-05</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

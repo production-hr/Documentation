@@ -1,0 +1,1231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Image Models: Reference — Archive</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Reference</span>
+        <span>2026-05-05</span>
+        <span>35 min read</span>
+      </div>
+
+      <h1 class="doc-title">AI Image Models: Reference</h1>
+
+      <p class="doc-lede">
+        Pipeline components, model landscape, quantisation formats, architecture types,
+        ComfyUI folder placement, and prompt dialect — one reference for the full stack.
+      </p>
+
+      <article class="prose">
+
+        <p class="dropcap">
+          Every image generation workflow in ComfyUI is a graph of connected nodes. Understanding
+          what each component does — and why it is a separate file — removes the confusion about
+          why modern models require three or four separate downloads instead of one. The signal
+          chain is invariant: prompt feeds a text encoder, which produces a conditioning embedding;
+          the KSampler runs that embedding plus random noise through the diffusion model for N
+          steps guided by the scheduler; the clean latent exits and passes through the VAE decoder
+          to become a pixel image. Each link in that chain is a distinct neural network with its
+          own file, format, and compatibility constraints — and mixing components across model
+          families breaks assumptions baked into the weights.
+        </p>
+
+        <!-- ============================================================ -->
+        <h2 id="pipeline-components">0. Core Pipeline Components</h2>
+
+        <p>The six nodes every workflow contains, what they do, and the most common mistakes at each stage.</p>
+
+        <div class="callout callout--note">
+          Signal chain: text → Text Encoder → conditioning embedding → KSampler feeds this plus random noise into the Diffusion Model (N times per the Scheduler) → clean latent → VAE Decode → pixel image.
+        </div>
+
+        <h3 id="comp-text-encoder">Text Encoder —(CLIP / T5 / LLM)</h3>
+        <p>Converts your text prompt into a numerical representation (embedding) the model can work with.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>Older models (SDXL) use CLIP — short prompts, keyword-based. Modern models use T5-XXL or full LLMs (Mistral-3, Qwen3). LLM encoders understand grammar, relationships, and long complex sentences far better.</td></tr>
+            <tr><th>Files by model</th><td>SDXL: CLIP-L + CLIP-G &nbsp;·&nbsp; Flux.1: CLIP-L + T5-XXL &nbsp;·&nbsp; Flux.2: Mistral-3 24B &nbsp;·&nbsp; Z-Image: Qwen3-4B &nbsp;·&nbsp; Qwen-Image: Qwen-VL</td></tr>
+            <tr><th>Common mistake</th><td>Loading the wrong encoder for your model. T5 is the reason Flux handles long descriptive prompts much better than SDXL. Loads separately via DualCLIPLoader / CLIPLoader.</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="comp-diffusion-model">Diffusion Model —(UNet / DiT)</h3>
+        <p>The core image generation engine — takes the text embedding plus a noisy latent and iteratively removes noise to produce your image.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>The main model file (12B or 20B parameters). Does NOT work on pixels — it works entirely in compressed latent space. Does not understand text itself; the text encoder hands it a pre-digested embedding.</td></tr>
+            <tr><th>Architecture</th><td>SDXL: UNet &nbsp;·&nbsp; Flux / SD3 / Qwen / Z-Image: DiT. Architecture determines everything downstream — scheduler choice, LoRA compatibility, VAE pairing.</td></tr>
+            <tr><th>ComfyUI node</th><td>"Load Checkpoint" for SDXL (all-in-one). "Load Diffusion Model" for Flux, Qwen, Z-Image (diffusion model only — encoders and VAE are separate files).</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="comp-vae">VAE —(Variational Autoencoder)</h3>
+        <p>Compresses full-resolution images into a smaller latent representation for the diffusion model to work in — and decompresses them back to pixels at the end.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>Without a VAE, the diffusion model would need to work at full pixel resolution, which is prohibitively expensive. The VAE is a lossy compressor: it trades some information for massive speed and memory savings. VAE quality directly affects colour accuracy, sharpness, and fine detail.</td></tr>
+            <tr><th>Files by model</th><td>Flux.1: <code>ae.safetensors</code> &nbsp;·&nbsp; Flux.2: <code>flux2-vae.safetensors</code> &nbsp;·&nbsp; SDXL: <code>sdxl-vae-fp16-fix.safetensors</code> &nbsp;·&nbsp; Qwen-Image: its own separate VAE</td></tr>
+            <tr><th>Critical rule</th><td>VAEs are NOT interchangeable between model families. Modern models (Flux.2, Z-Image) use a 16-channel VAE vs the 4-channel VAE of SDXL — swapping them produces washed-out or distorted images immediately. Place all VAE files in <code>models/vae/</code>.</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="comp-scheduler">Scheduler —(Sampler Schedule)</h3>
+        <p>Controls how noise is added and removed across the diffusion steps — the mathematical trajectory from pure noise to clean image. Not a neural network; it's an algorithm.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>Different schedulers produce different results at the same step count. Flow Matching models (Flux) use straight-line probability-space trajectories — fundamentally different math from DDPM. This is why DDPM schedulers (DPM++, Karras, DDIM) cannot be freely swapped onto Flux.</td></tr>
+            <tr><th>Common schedulers</th><td>DPM++ 2M Karras (SDXL quality, ~20 steps) &nbsp;·&nbsp; Euler / Euler a (SDXL fast) &nbsp;·&nbsp; Simple / SGM Uniform (Flux) &nbsp;·&nbsp; DPM++ 3S (Qwen-Image fast, ~10 steps)</td></tr>
+            <tr><th>Common mistake</th><td>Using DPM++ Karras or DDIM on a Flux model. Use Simple or SGM Uniform for Flux. Set inside the KSampler or SamplerCustomAdvanced node.</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="comp-ksampler">KSampler —(The Sampler Node)</h3>
+        <p>The node that runs the denoising loop — calls the diffusion model N times, guided by the text embedding and scheduler, to produce the final clean latent.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>At each step, it asks the diffusion model "given this noisy latent and this prompt, what noise is here?" then uses the scheduler to take one denoising step. Also applies CFG: runs the model twice per step (conditioned + unconditional) and extrapolates toward the prompt. Flux models bake guidance in via distillation — CFG=1, one pass per step.</td></tr>
+            <tr><th>Key settings</th><td>Steps: 20–50 (standard), 4–8 (distilled) &nbsp;·&nbsp; CFG Scale: 7–9 (SDXL), 1.0 (Flux schnell), 3.5 (Flux dev) &nbsp;·&nbsp; Denoise: 1.0 = txt2img, &lt;1.0 = img2img</td></tr>
+            <tr><th>Notes</th><td>For Flux, use the FluxGuidance node instead of standard CFG. SamplerCustomAdvanced gives more control than basic KSampler. Seed controls the initial noise pattern.</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="comp-clip-text-encode">CLIP Text Encode —(Prompt Node)</h3>
+        <p>Feeds your text prompt through the loaded text encoder and produces the conditioning embedding that guides the denoising process.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>Usually two nodes — one for positive prompt (what you want) and one for negative prompt (what you don't). Flux models use no negative prompt: guidance is baked into the weights via distillation, so there is no unconditional pass for CFG to push against.</td></tr>
+            <tr><th>By model</th><td>SDXL: two CLIP Text Encode nodes (positive + negative) &nbsp;·&nbsp; Flux.1/2: one CLIPTextEncodeFlux node with guidance parameter &nbsp;·&nbsp; Qwen-Image: one text encode node, negative optional</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="comp-vae-decode">VAE Decode —(Output Node)</h3>
+        <p>Takes the final clean latent from the KSampler and runs it through the VAE decoder to convert it back into a full-resolution pixel image.</p>
+        <table>
+          <tbody>
+            <tr><th>Variants</th><td>Standard VAE Decode for normal use. VAE Decode (Tiled) for very large images to avoid VRAM spikes during decoding. Latent upscale workflows: decode → upscale → re-encode → decode again.</td></tr>
+            <tr><th>Common mistake</th><td>If output images look washed out, too saturated, or soft, the first thing to check is whether you loaded the correct VAE. The fp16-fix VAE for SDXL is critical — the original baked VAE in many SDXL checkpoints produces washed colours.</td></tr>
+          </tbody>
+        </table>
+
+        <!-- ============================================================ -->
+        <h2 id="component-internals">0b. What Each Component Actually Is</h2>
+
+        <p>The "what it does" view tells you how to use it. This section explains what kind of mathematical object each component actually is — which makes the compatibility rules that follow make intuitive sense.</p>
+
+        <h3 id="internals-vae">VAE —(Variational Autoencoder)</h3>
+        <p>A neural network trained as a lossy compressor. Two halves: an Encoder (pixels → latent) and a Decoder (latent → pixels). "Variational" means it maps to a probability distribution in latent space, not a fixed point.</p>
+        <table>
+          <tbody>
+            <tr><th>Internally</th><td>Trained separately from the diffusion model, then frozen. Compresses a 512×512 RGB image (786K values) into a small latent grid — e.g. 64×64×4 channels (16K values) for SDXL, or 128×128×16 for modern models. The diffusion model never sees pixels; it only manipulates these tiny latents. Because the VAE is lossy, reconstruction is not pixel-perfect — which is fine because the diffusion model fills in details from training anyway.</td></tr>
+            <tr><th>Key facts</th><td>SDXL: 4-channel, 8× spatial compression &nbsp;·&nbsp; Flux / Qwen / Z-Image: 16-channel, 8× spatial compression — richer encoding, better fine detail &nbsp;·&nbsp; Files: <code>ae.safetensors</code> (Flux.1), <code>flux2-vae.safetensors</code> (Flux.2)</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="internals-text-encoder">Text Encoder —(CLIP / T5 / LLM)</h3>
+        <p>A neural network trained to map text into a high-dimensional vector space that the diffusion model can be conditioned on. The diffusion model learns to associate these vectors with visual concepts during training.</p>
+        <table>
+          <tbody>
+            <tr><th>Internally</th><td>CLIP was trained by matching image-text pairs — it understands visual-semantic similarity but is limited in contextual reasoning. T5 is a sequence-to-sequence language model — it understands grammar, relationships, and negation much better. The encoder output is a tensor [batch, seq_len, hidden_dim] — each token becomes a vector. The diffusion model uses cross-attention at every layer to query this conditioning throughout the denoising process.</td></tr>
+            <tr><th>Key facts</th><td>CLIP-L: 77-token limit, semantic matching &nbsp;·&nbsp; CLIP-G (SDXL): larger CLIP, better style &nbsp;·&nbsp; T5-XXL (Flux.1): 512-token limit, language understanding &nbsp;·&nbsp; Mistral-3 24B (Flux.2): 32K-token limit, full LLM reasoning &nbsp;·&nbsp; Qwen3-4B (Z-Image) &nbsp;·&nbsp; Qwen-VL (Qwen-Image)</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="internals-scheduler">Scheduler —(Noise Schedule)</h3>
+        <p>A mathematical function that defines how much noise exists at each step of the diffusion process, and how to compute the update from one noisy state to the next. Not a neural network — it's an algorithm.</p>
+        <table>
+          <tbody>
+            <tr><th>Internally</th><td>During training, a random noise level (timestep t) is sampled, noise is added to the image latent, and the model learns to predict what noise was added. During inference, you start at t=T (pure noise) and run backwards. DDPM uses a fixed Markov chain. DPM++ uses ODE solvers to take larger, more accurate steps. Karras uses non-linear noise spacing that concentrates steps where they matter most. Flow Matching (Flux) uses straight-line trajectories in probability space — which is why DDPM schedulers don't work on Flux.</td></tr>
+            <tr><th>Key facts</th><td>DDPM / DDIM: original formulation, 50–1000 steps &nbsp;·&nbsp; DPM++ 2M Karras: best quality/speed for SDXL, ~20 steps &nbsp;·&nbsp; Euler / Euler a: fast SDXL iteration &nbsp;·&nbsp; Simple / SGM Uniform: Flow Matching (Flux) &nbsp;·&nbsp; DPM++ 3S: fast option for Qwen-Image (~10 steps)</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="internals-ksampler">KSampler —(Denoising Loop)</h3>
+        <p>Not a model — it's the inference loop that calls the diffusion model N times. At each step it asks: "given this noisy latent and this prompt, what noise is here?" then uses the scheduler to take one denoising step.</p>
+        <table>
+          <tbody>
+            <tr><th>Internally</th><td>Essentially: <code>for t in reversed(timesteps): noise_pred = diffusion_model(latent_t, t, conditioning); latent_{t-1} = scheduler.step(noise_pred, latent_t, t)</code>. Also applies Classifier-Free Guidance (CFG): runs the model twice per step (conditioned + unconditional) and extrapolates toward the prompt. CFG=7 means "move 7 steps in the direction of the prompt". Flux bakes guidance in via distillation — CFG=1, one pass per step, twice as fast.</td></tr>
+            <tr><th>Key facts</th><td>Steps: 20–50 standard, 4–8 for distilled &nbsp;·&nbsp; CFG Scale: 7–9 (SDXL), 1.0 (Flux), 3.5 (Flux dev) &nbsp;·&nbsp; Denoise: 1.0 = txt2img, &lt;1.0 = img2img &nbsp;·&nbsp; Seed: controls initial noise pattern</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="internals-lora">LoRA —(Low-Rank Adaptation)</h3>
+        <p>A fine-tuning technique that adds small trainable matrices alongside the frozen weights of a pre-trained model. At inference, the LoRA weights are merged with the base model at load time. Not a separate network — it modifies the existing one.</p>
+        <table>
+          <tbody>
+            <tr><th>Internally</th><td>Instead of fine-tuning all N billion parameters, LoRA decomposes the weight update into two small matrices: ΔW = A × B, where A and B have rank r (typically 4–64). A 12B parameter model can be personalised with only 10–200 MB of adapter weights. Multiple LoRAs can be stacked. LoRAs trained on Flux.1 dev will NOT work on SDXL — they encode weight offsets for a specific architecture.</td></tr>
+            <tr><th>Key facts</th><td>File size: 10 MB – 300 MB &nbsp;·&nbsp; Rank: 4 (minimal), 16–64 (typical), 128+ (high capacity) &nbsp;·&nbsp; Scale: 0.5–1.0 safe, &gt;1.5 risks artefacts &nbsp;·&nbsp; Must match base model architecture exactly</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="internals-conditioning">Conditioning —(Embeddings)</h3>
+        <p>The output of the text encoder — the numerical representation of your prompt that guides the denoising process. A tensor of floating-point vectors, one per token, passed into the diffusion model via cross-attention at every layer.</p>
+        <table>
+          <tbody>
+            <tr><th>Internally</th><td>Tensor shape: [1, seq_len, hidden_dim] — e.g. [1, 77, 768] for CLIP-L or [1, 512, 4096] for T5-XXL. Every transformer layer in the diffusion model has cross-attention heads that query this conditioning, asking "how relevant is each token to this patch of the image right now?" This is why longer structured prompts work better with T5/LLM encoders.</td></tr>
+            <tr><th>Key facts</th><td>Positive conditioning: what you want &nbsp;·&nbsp; Negative conditioning: what you don't want (not used in Flux — no unconditional pass) &nbsp;·&nbsp; Empty conditioning: unconditional baseline for CFG &nbsp;·&nbsp; Strength controlled by CFG scale</td></tr>
+          </tbody>
+        </table>
+
+        <!-- ============================================================ -->
+        <h2 id="compatibility">0c. Compatibility Rules &amp; Resolution Constraints</h2>
+
+        <p>The most common sources of errors and degraded output. The core rule: every component was co-trained or matched — mixing components across model families breaks assumptions baked into the weights.</p>
+
+        <h3 id="compatibility-components">Component Compatibility</h3>
+
+        <h4 id="compat-vae">VAE ↔ Diffusion Model</h4>
+        <table>
+          <tbody>
+            <tr><th>Why it matters</th><td>VAEs are NOT interchangeable between model families. Each model is trained end-to-end with a specific VAE, and the latent space encoding is baked into the diffusion model weights.</td></tr>
+            <tr><th>What breaks</th><td>Using the wrong VAE produces immediately visible problems: washed-out or oversaturated colours, loss of fine detail, blurry or distorted images. The 4-channel SDXL VAE and the 16-channel Flux VAE encode information completely differently — swapping them is like using the wrong codec to decode a video file. Even within SDXL, the original baked-in VAE has known FP16 precision issues — the fp16-fix VAE is the standard replacement. Flux.2 uses a different VAE than Flux.1.</td></tr>
+            <tr><th>Correct pairings</th><td>Flux.1: <code>ae.safetensors</code> &nbsp;·&nbsp; Flux.2: <code>flux2-vae.safetensors</code> &nbsp;·&nbsp; SDXL: <code>sdxl-vae-fp16-fix.safetensors</code> &nbsp;·&nbsp; Qwen-Image: its own dedicated VAE &nbsp;·&nbsp; Z-Image: Wan2.1 VAE (same team)</td></tr>
+          </tbody>
+        </table>
+
+        <h4 id="compat-encoder">Text Encoder ↔ Diffusion Model</h4>
+        <table>
+          <tbody>
+            <tr><th>Why it matters</th><td>Text encoders are architecture-specific. The diffusion model was trained to interpret conditioning from a specific encoder — feeding it vectors from a different encoder produces garbage or an immediate crash.</td></tr>
+            <tr><th>What breaks</th><td>Flux.1 dev expects T5-XXL conditioning at 4096 dims. An SDXL CLIP encoder outputs 768 dims — the dimensions won't even match, causing an immediate crash. For Flux.1 you need BOTH CLIP-L and T5-XXL simultaneously via DualCLIPLoader. Flux.2 requires Mistral-3 — nothing else.</td></tr>
+            <tr><th>Correct pairings</th><td>Flux.1 [dev/schnell/kontext]: CLIP-L + T5-XXL (both required) &nbsp;·&nbsp; Flux.2 [dev/klein]: Mistral-3 Small (24B) &nbsp;·&nbsp; Z-Image: Qwen3-4B &nbsp;·&nbsp; Qwen-Image-2512: Qwen2.5-VL-7B &nbsp;·&nbsp; SDXL: CLIP-L + CLIP-G (both via DualCLIPLoader)</td></tr>
+          </tbody>
+        </table>
+
+        <h4 id="compat-scheduler">Scheduler ↔ Model</h4>
+        <table>
+          <tbody>
+            <tr><th>Why it matters</th><td>Schedulers must match the mathematical framework the model was trained with. DDPM-family schedulers (DPM++, Euler, DDIM, Karras) are incompatible with Flow Matching models (Flux).</td></tr>
+            <tr><th>What breaks</th><td>DDPM models are trained to predict noise at discrete timesteps (0–999). Flow Matching models (Flux) use straight-line probability flows — the timesteps mean something completely different. Running DPM++ Karras on Flux produces degraded, incorrect results. SD3 and Flux share the same Flow Matching framework, so their schedulers overlap.</td></tr>
+            <tr><th>Correct pairings</th><td>SDXL: Euler a, DPM++ 2M Karras, DPM++ 3M SDE &nbsp;·&nbsp; Flux.1 / Flux.2: Simple, SGM Uniform (not DPM++ / DDIM) &nbsp;·&nbsp; SD3: same as Flux &nbsp;·&nbsp; Qwen-Image: Euler + Simple (default), DPM++ 3S (faster)</td></tr>
+          </tbody>
+        </table>
+
+        <h4 id="compat-lora">LoRA ↔ Base Model</h4>
+        <table>
+          <tbody>
+            <tr><th>Why it matters</th><td>LoRAs encode weight offsets for a specific model architecture. A Flux.1 LoRA cannot be applied to SDXL, and vice versa. Even within Flux, a Flux.1 LoRA on Flux.2 is unreliable.</td></tr>
+            <tr><th>What breaks</th><td>A LoRA file contains matrices shaped to match the exact weight dimensions of its target model. Applying a 12B Flux LoRA to a 3.5B SDXL model fails immediately — dimensions don't match. Multiple LoRAs stack fine within the same model but can conflict stylistically. Loading at strength &gt;1.5 with any LoRA can produce artefacts.</td></tr>
+            <tr><th>Correct pairings</th><td>Flux.1 LoRA → Flux.1 only &nbsp;·&nbsp; Flux.2 LoRA → Flux.2 only &nbsp;·&nbsp; SDXL LoRA → SDXL only &nbsp;·&nbsp; Strength: 0.5–1.0 safe, &gt;1.5 risks artefacts &nbsp;·&nbsp; No hard limit on simultaneous LoRAs but &gt;3–4 often conflicts</td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="resolution">Image Resolution Constraints</h3>
+
+        <p>Resolution constraints come from how positional encoding is baked into model weights during training. Generating at the wrong size activates untrained positional combinations, producing artefacts, repeated subjects, or quality degradation.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Native / Optimal Resolution</th>
+              <th>Multiple Requirement</th>
+              <th>Resolution Behaviour</th>
+              <th>Notes &amp; Limits</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>SD 1.5</strong></td>
+              <td>512 × 512 px</td>
+              <td>Multiples of 64</td>
+              <td>Trained at 512px. Going above 768px causes repeating patterns (multiple subjects, tiled artefacts). Use Hi-Res Fix or tiled upscaling to go higher.</td>
+              <td>Never generate above 768×768 directly. The UNet's positional encoding breaks at larger sizes. Use 512 → upscale → img2img workflow.</td>
+            </tr>
+            <tr>
+              <td><strong>SDXL 1.0</strong></td>
+              <td>1024 × 1024 px</td>
+              <td>Multiples of 64</td>
+              <td>Trained at 1024px. Can go to ~1536px on long edge without major issues. Above that, repeating artefacts appear. Non-square aspect ratios work well (e.g. 1216×832).</td>
+              <td>SDXL was the first model with native aspect ratio awareness. Common sizes: 1024×1024, 1216×832, 896×1152, 1344×768. Always multiples of 64 or generation fails.</td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 dev / schnell</strong></td>
+              <td>~1024 × 1024 px</td>
+              <td>Multiples of 16</td>
+              <td>Flexible resolution — can generate at various aspect ratios natively. Has been tested well beyond 1024px without artefacts. No hard ceiling in normal use.</td>
+              <td>Much more flexible than SDXL. Community has generated quality images up to 2048px and beyond. Quality degrades gracefully rather than producing artefacts.</td>
+            </tr>
+            <tr>
+              <td><strong>Flux.2 dev</strong></td>
+              <td>~1024 × 1024 px</td>
+              <td>Multiples of 16</td>
+              <td>Same flexibility as Flux.1. The Mistral-3 text encoder supports 32K-token prompts — resolution flexibility matched by improved compositional quality at large sizes.</td>
+              <td>Supports rectangular shapes freely (width + height both multiples of 16). Pro Ultra mode via API reaches up to 4MP (~2048×2048).</td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 Kontext</strong></td>
+              <td>~1024 × 1024 px</td>
+              <td>Multiples of 16</td>
+              <td>Editing model — resolution is typically matched to the input image being edited. Output resolution generally matches the input to preserve coherence.</td>
+              <td>When editing, keep output resolution matching input. Resizing during an editing workflow degrades identity and composition preservation.</td>
+            </tr>
+            <tr>
+              <td><strong>Z-Image Turbo</strong></td>
+              <td>~1024 × 1024 px</td>
+              <td>Multiples of 16</td>
+              <td>DiT architecture — flexible resolution. 16 GB VRAM comfortable at 1024px. Larger sizes possible but generation time increases.</td>
+              <td>S3-DiT architecture — resolution flexibility similar to Flux. Tested at standard aspect ratios (16:9, 4:3, 9:16 etc). No known hard ceiling.</td>
+            </tr>
+            <tr>
+              <td><strong>Qwen-Image-2512</strong></td>
+              <td>~1328 × 1328 px</td>
+              <td>No strict constraint<br />(recommend multiples of 16)</td>
+              <td>Officially supports multiple aspect ratios: 1:1 (1328×1328), 16:9 (1664×928), 9:16 (928×1664), 4:3 (1472×1140), 3:2 (1584×1056). These are the tested sizes from the official repo.</td>
+              <td>Use the official aspect ratio sizes where possible — the model was trained on specific resolutions. Arbitrary sizes work but the listed sizes are optimal. Native 2K landscape (1664×928) is its strength.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          The "multiples of 64" rule for SDXL/SD1.5 is hard — ComfyUI will round or error. The "multiples of 16" rule for DiT models (Flux, Qwen, Z-Image) is softer but still recommended. The 16-channel VAE in modern models provides better reconstruction at higher resolutions than the 4-channel SDXL VAE.
+        </div>
+
+        <!-- ============================================================ -->
+        <h2 id="generation-modes">0d. Generation Modes</h2>
+
+        <p>All generation modes share the same core pipeline. What changes is: (1) what the KSampler starts from (pure noise vs a partially-noised image latent), (2) whether a mask constrains where generation happens, and (3) what additional conditioning beyond text is injected. The denoise parameter is the single knob that controls how much of the input image survives.</p>
+
+        <h3 id="modes-table">Mode Reference</h3>
+
+        <h4 id="mode-txt2img">Text to Image (txt2img)</h4>
+        <p>Generate an image from a text prompt alone. The KSampler starts from pure random noise (denoise = 1.0) and denoises it fully, guided only by the prompt conditioning.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>The latent is initialised with random Gaussian noise seeded by your seed value. The diffusion model runs the full N steps from t=T (maximum noise) down to t=0 (clean). Changing the seed changes which region of the model's learned distribution you sample from.</td></tr>
+            <tr><th>Key settings</th><td>Denoise = 1.0 &nbsp;·&nbsp; Steps: 20–50 standard, 4–8 distilled &nbsp;·&nbsp; No negative prompt on Flux — guidance is baked in. SDXL benefits significantly from a standard negative prompt.</td></tr>
+          </tbody>
+        </table>
+
+        <h4 id="mode-img2img">Image to Image (img2img)</h4>
+        <p>Take an existing image as a starting point and regenerate it with modifications guided by a text prompt. The input image is VAE-encoded into a latent and partially noised instead of starting from pure noise.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>The input image is VAE-encoded to a clean latent. Noise is added up to timestep t = T × denoise (not the full T). At denoise=0.5, you add 50% of maximum noise — the model keeps roughly half the original structure. At denoise=0.9, almost everything is replaced. The prompt then steers what the model reconstructs.</td></tr>
+            <tr><th>Key settings</th><td>Denoise: 0.3–0.9 typical &nbsp;·&nbsp; Low denoise preserves structure &nbsp;·&nbsp; High denoise = more creative freedom &nbsp;·&nbsp; See the Denoise Continuum table below for the full breakdown.</td></tr>
+          </tbody>
+        </table>
+
+        <h4 id="mode-inpainting">Inpainting</h4>
+        <p>Regenerate only a selected region of an image while leaving the rest untouched. A mask defines which pixels are regenerated (white) and which are preserved (black).</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>The image is VAE-encoded to a latent. The mask is downsampled to latent resolution (8× smaller). Only the masked latent region receives noise — the unmasked region is held fixed. The model must generate content coherent with the preserved surroundings. Flux.1 Fill is BFL's official dedicated inpainting model.</td></tr>
+            <tr><th>Common mistake</th><td>Artefacts at mask edges usually come from poor mask feathering or too small a context region. Make the mask slightly larger than the object to replace so the model has edge context.</td></tr>
+          </tbody>
+        </table>
+
+        <h4 id="mode-outpainting">Outpainting (Uncrop)</h4>
+        <p>Extend an image beyond its original borders. The existing image is placed on a larger canvas and the empty border region is inpainted by the model.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>Mechanically identical to inpainting — the original image occupies part of the canvas and the empty region is the mask. The model must extend scene geometry, lighting, and style without any pixel information in the extension region. Flux.1 Fill and Kontext are significantly better at outpainting than base models because they were trained on this task.</td></tr>
+            <tr><th>Tips</th><td>Use a prompt describing the full extended scene, not just the addition. Overlap the mask slightly into the original image (5–10%) to give the model context for blending.</td></tr>
+          </tbody>
+        </table>
+
+        <h4 id="mode-variation">Image Variation (Redux / Style Transfer)</h4>
+        <p>Generate a new image that preserves the style or content of a reference image without directly copying it. Uses CLIP Vision or IP-Adapter to extract visual features from the reference.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>The reference is passed through a CLIP Vision encoder to extract semantic/stylistic feature vectors — not the VAE (which preserves pixel content). These vectors are injected as additional conditioning alongside the text prompt. The model generates from noise as in txt2img, with soft visual guidance from the reference. Flux.1 Redux uses this approach; IP-Adapter is the SDXL-era equivalent.</td></tr>
+            <tr><th>Key settings</th><td>Denoise = 1.0 (starts from noise) &nbsp;·&nbsp; Reference strength 0.0–1.0 &nbsp;·&nbsp; Unlike img2img, does NOT preserve composition — extracts abstract visual qualities. Good for style consistency across a batch.</td></tr>
+          </tbody>
+        </table>
+
+        <h4 id="mode-multi-image">Multi-Image Input (Kontext / Reference)</h4>
+        <p>Provide multiple reference images simultaneously — the model edits, combines, or uses them for consistency. Architecturally distinct from IP-Adapter: the model reads and reasons about image content, not just style vectors.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>Flux.1 Kontext and Qwen-Image-Edit encode reference images as visual tokens and concatenate them with the text conditioning. The model attends to all of them in self-attention, understanding relationships between images ("keep this face", "use this background"). IP-Adapter extracts abstract features; Kontext directly processes image content.</td></tr>
+            <tr><th>Use cases</th><td>Character consistency, product photography, style-locked image series. Models: Flux.1 Kontext, Qwen-Image-Edit (1–10 input images). Prompt must explicitly reference what to do with each image.</td></tr>
+          </tbody>
+        </table>
+
+        <h4 id="mode-controlnet">ControlNet (Guided Generation)</h4>
+        <p>Condition generation on a structural guide image — depth map, edge map, pose skeleton, line art, etc. The output structure is locked to the guide regardless of prompt creativity.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>ControlNet adds extra input channels to specific layers of the diffusion model. The guide image is processed by a separate small encoder and injected as residual additions into the UNet/DiT during denoising. Multiple ControlNets can be stacked with individual strength weights. For Flux, XLabs provides adapters (Depth, Canny, etc.).</td></tr>
+            <tr><th>Key settings</th><td>Strength: 1.0 = strong structural adherence, 0.3–0.5 = loose guidance &nbsp;·&nbsp; Guide types: Depth, Canny, Pose, Lineart, Normal, Scribble &nbsp;·&nbsp; Stacking Depth + Pose gives full body and spatial control simultaneously.</td></tr>
+          </tbody>
+        </table>
+
+        <h4 id="mode-upscale">Upscaling Workflows (Hi-Res Fix / Latent Upscale)</h4>
+        <p>Generate at a lower resolution, upscale the result, then run img2img at partial denoise to add high-frequency detail at the larger size.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>Generating at 2048px directly is expensive and risks artefacts. Standard workflow: generate at 1024px → upscale to 2048px (bicubic, RealESRGAN, or latent upscale) → img2img at denoise 0.35–0.6. "Latent upscale" skips the VAE decode/encode cycle — the latent is upsampled directly, then denoised again. Faster and avoids VAE reconstruction artefacts.</td></tr>
+            <tr><th>Key settings</th><td>Pass 1: denoise 1.0 at native resolution &nbsp;·&nbsp; Pass 2: denoise 0.4–0.55 sweet spot &nbsp;·&nbsp; &gt;0.7 = model ignores upscale and regenerates freely &nbsp;·&nbsp; &lt;0.25 = no detail added &nbsp;·&nbsp; Upscalers: <code>RealESRGAN_x4plus.pth</code>, <code>4x-UltraSharp.pth</code></td></tr>
+          </tbody>
+        </table>
+
+        <h3 id="denoise">The Denoise Continuum</h3>
+
+        <p>Denoise (also called "denoising strength") controls what timestep the KSampler starts from — and therefore how much of the original image can survive. It is the single most important parameter to understand in img2img, inpainting, and upscaling workflows.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Denoise Value</th>
+              <th>Perceived Effect</th>
+              <th>What's Happening Technically</th>
+              <th>When to Use It</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>0.0</strong></td>
+              <td>No change</td>
+              <td>No noise added to the input latent. The KSampler runs zero denoising steps. Output = input image passed through VAE encode → decode only.</td>
+              <td>Effectively a VAE round-trip. Useful only for testing VAE quality. Not a useful generation mode.</td>
+            </tr>
+            <tr>
+              <td><strong>0.1 – 0.2</strong></td>
+              <td>Micro-refinement</td>
+              <td>Extremely subtle texture and sharpness adjustments. Composition, colours, and content completely preserved. The model is only making small local corrections.</td>
+              <td>Useful for slight texture improvements or reducing digital smoothness. Prompt has almost no effect at this range.</td>
+            </tr>
+            <tr>
+              <td><strong>0.3 – 0.45</strong></td>
+              <td>Stylistic adjustment</td>
+              <td>Structure, composition, and most content preserved. Colours, texture, and surface qualities shift noticeably. Good for style transfers while keeping the layout.</td>
+              <td>The sweet spot for Hi-Res Fix pass 2 (adding detail to an upscale without changing composition). Prompt starts to influence the aesthetic.</td>
+            </tr>
+            <tr>
+              <td><strong>0.5 – 0.65</strong></td>
+              <td>Moderate reimagining</td>
+              <td>General composition preserved (rough positions of main subjects), but significant content changes are possible. Lighting, style, fine details all shift substantially.</td>
+              <td>Good for img2img creative variations. The model "remembers" the layout but rewrites the details. Prompt has strong influence. Common for iterative refinement workflows.</td>
+            </tr>
+            <tr>
+              <td><strong>0.7 – 0.8</strong></td>
+              <td>Heavy reinterpretation</td>
+              <td>Only the broadest structural suggestions from the input survive — rough brightness distribution, very general composition. Most content is regenerated from the prompt.</td>
+              <td>Used when you want loose inspiration from a reference rather than preservation. The original image functions more as a composition hint than a content source.</td>
+            </tr>
+            <tr>
+              <td><strong>0.9 – 0.95</strong></td>
+              <td>Near-full regeneration</td>
+              <td>Almost nothing from the original image is preserved. The faintest shadow of the original structure may subtly influence the output. Essentially txt2img with a weak initial bias.</td>
+              <td>Rarely useful. At this range you may as well use txt2img with a more detailed prompt. The tiny residual influence is not predictable.</td>
+            </tr>
+            <tr>
+              <td><strong>1.0</strong></td>
+              <td>Full txt2img</td>
+              <td>Pure random noise. No input image influence whatsoever. Complete creative freedom within the prompt. The input image (if any) is entirely ignored.</td>
+              <td>Standard txt2img mode. The seed controls the initial noise pattern. Changing the seed while keeping the prompt gives a different image from the same distribution.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          The same denoise value produces different levels of change depending on the model, scheduler, step count, and CFG scale. These ranges are guidelines for standard SDXL/Flux workflows at 20+ steps. Distilled models (Flux schnell, Z-Image Turbo) with 4–8 steps behave differently — a denoise of 0.5 at 4 steps is not equivalent to 0.5 at 30 steps.
+        </div>
+
+        <!-- ============================================================ -->
+        <h2 id="empty-latent">0e. The Empty Latent Image Node</h2>
+
+        <p>Every txt2img workflow in ComfyUI contains an Empty Latent Image node. It is often overlooked because it feels like a trivial "set the canvas size" step — but understanding what it actually creates explains why the diffusion pipeline is structured the way it is.</p>
+
+        <p>What the node does: it creates a blank tensor of zeros in latent space — not a pixel canvas. This tensor is the starting point the KSampler will immediately fill with random Gaussian noise (seeded by your seed value) before denoising begins. Without it, the KSampler has nothing to work with.</p>
+
+        <p>Why latent space, not pixels? The diffusion model never sees or generates pixels. It works entirely inside the compressed latent space produced by the VAE encoder. At the end of the pipeline the VAE decoder converts the final denoised latent back into a pixel image. The Empty Latent Image node creates the correctly-shaped container for this latent-space process.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Setting</th>
+              <th>What It Controls</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Width</strong></td>
+              <td>Output image width in pixels</td>
+              <td>The node divides by 8 internally (VAE compression factor) to compute latent width. 1024 px → 128 latent units. Must be a multiple of 64 (SDXL) or 16 (DiT models).</td>
+            </tr>
+            <tr>
+              <td><strong>Height</strong></td>
+              <td>Output image height in pixels</td>
+              <td>Same 8× compression applies. Non-matching multiples cause artefacts or ComfyUI rounding errors.</td>
+            </tr>
+            <tr>
+              <td><strong>Batch Size</strong></td>
+              <td>Number of images generated in one pass</td>
+              <td>Batch 4 = 4 independent latents denoised in parallel. Multiplies VRAM usage roughly linearly. Each image in the batch uses a seed offset (+0, +1, +2…).</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>The latent tensor shape created:</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Model Family</th>
+              <th>Channels</th>
+              <th>Latent Shape (1024×1024 example)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>SDXL / SD1.5</td>
+              <td>4-channel</td>
+              <td><code>[batch, 4, 128, 128]</code></td>
+            </tr>
+            <tr>
+              <td>Flux.1, Flux.2, Z-Image, Qwen-Image</td>
+              <td>16-channel</td>
+              <td><code>[batch, 16, 128, 128]</code> — encodes richer information per spatial unit, contributing to better fine detail and colour accuracy</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>What actually happens after creation:</p>
+        <ol>
+          <li>The KSampler receives the empty latent and immediately populates it with random Gaussian noise using the seed value. The "empty" tensor is essentially discarded — the seed-noise is the true starting point.</li>
+          <li>The diffusion model denoises this noise for N steps, guided by the text conditioning from the text encoder.</li>
+          <li>The final clean latent exits the KSampler and goes to VAE Decode → pixel image.</li>
+        </ol>
+
+        <div class="callout callout--note">
+          In img2img workflows the Empty Latent Image node is not used — the input image is VAE-encoded into a real latent, partially noised, and fed directly to the KSampler. The Empty Latent Image node is exclusively a txt2img starting point. The Width and Height fields are the only place in a standard txt2img workflow where you set output resolution — they must respect the model's resolution constraints (see Section 0c).
+        </div>
+
+        <!-- ============================================================ -->
+        <h2 id="model-landscape">1. Model Landscape</h2>
+
+        <p>Core open-source image generation models in active use as of March 2026. API-only models included for comparison.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Params</th>
+              <th>Architecture</th>
+              <th>Native Precision</th>
+              <th>VRAM (full weight)</th>
+              <th>Key Notes</th>
+              <th>Typical Filenames</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>SDXL 1.0</strong></td>
+              <td>~3.5B</td>
+              <td>UNet + CLIP</td>
+              <td>BF16/FP16</td>
+              <td>~6–8 GB</td>
+              <td>Legacy open-source standard. Native 1024px. Massive fine-tune ecosystem (CivitAI, etc). Requires CFG + negative prompts. Being replaced by DiT models but still widely used.</td>
+              <td><code>dreamshaper-xl.safetensors</code><br /><code>sdxl_base_1.0.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 [dev]</strong></td>
+              <td>12B</td>
+              <td>DiT / Flow Matching</td>
+              <td>BF16/FP8</td>
+              <td>~16 GB</td>
+              <td>Open weights, non-commercial license. Guidance-distilled from Flux.1 [pro]. 20–50 steps. Best detail of open Flux.1 models. Standard for fine-tuning/LoRA training. T5+CLIP text encoders.</td>
+              <td><code>flux1-dev.safetensors</code><br /><code>flux1-dev-Q4_K_M.gguf</code></td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 [schnell]</strong></td>
+              <td>12B</td>
+              <td>DiT / Flow Matching</td>
+              <td>BF16/FP8</td>
+              <td>~16 GB</td>
+              <td>Apache 2.0 — full commercial use. Adversarial-distilled: 1–4 steps only. Fast for iteration/drafts. Slight quality drop vs dev. Same T5+CLIP encoders.</td>
+              <td><code>flux1-schnell.safetensors</code><br /><code>flux1-schnell-Q4_K_M.gguf</code></td>
+            </tr>
+            <tr>
+              <td><strong>Flux 1.1 Pro</strong><br />(+ Ultra/Raw)</td>
+              <td>12B+</td>
+              <td>DiT / Flow Matching</td>
+              <td>Cloud only</td>
+              <td>API only</td>
+              <td>Closed source, API only (BFL, fal.ai, Replicate). Best Flux.1-gen quality. Ultra = up to 4MP. Raw = hyper-realistic candid photography style. ~4.5s generation.</td>
+              <td>API: bfl.ml / fal.ai<br />No local weights</td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 Kontext</strong><br />[dev/pro/max]</td>
+              <td>12B</td>
+              <td>DiT / Flow Matching</td>
+              <td>BF16/FP8</td>
+              <td>~16 GB (dev)</td>
+              <td>Released May 2025. In-context image editing — takes image+text prompt and edits coherently. Dev = open weights non-commercial. Pro/Max = API only. Adobe Photoshop beta integration.</td>
+              <td><code>flux1-kontext-dev.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><strong>Flux.2 [dev]</strong></td>
+              <td>~32B</td>
+              <td>DiT + Mistral-3 24B encoder</td>
+              <td>BF16/FP8</td>
+              <td>~32–40 GB</td>
+              <td>Released Nov 2025. Non-commercial open weights. Mistral-3 LLM replaces T5 as text encoder — massive prompt comprehension jump. Supports 32K token prompts. Best open image model for complex scenes.</td>
+              <td><code>flux2-dev.safetensors</code><br /><code>flux2-dev-Q4_K_M.gguf</code></td>
+            </tr>
+            <tr>
+              <td><strong>Flux.2 [klein]</strong></td>
+              <td>Smaller than dev</td>
+              <td>DiT + Mistral-3 encoder</td>
+              <td>BF16/GGUF</td>
+              <td>~8–12 GB</td>
+              <td>Apache 2.0 (fully free). "Klein" = small in German. Consumer GPU-friendly sibling of Flux.2 Dev. Same LLM encoder advantage at lower cost. Good Q4 GGUF runs on 8 GB VRAM.</td>
+              <td><code>flux2-klein.gguf</code><br /><code>flux2-klein-Q4_K_M.gguf</code></td>
+            </tr>
+            <tr>
+              <td><strong>Z-Image Turbo</strong></td>
+              <td>~6B</td>
+              <td>S3-DiT (single-stream)</td>
+              <td>BF16/FP8/GGUF</td>
+              <td>~16 GB (BF16)<br />~8 GB (Q4)</td>
+              <td>Alibaba Tongyi Lab. Apache 2.0. Nov 2025. Photorealistic in &lt;3s. Qwen3-4B as LLM text encoder. Surprisingly strong photorealism for its size. Best-in-class speed/quality ratio on consumer GPUs.</td>
+              <td><code>z-image-turbo.safetensors</code><br /><code>z-image-turbo-fp8.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><strong>Qwen-Image-2512</strong></td>
+              <td>~20B</td>
+              <td>DiT + Qwen-VL encoder</td>
+              <td>BF16/FP8/GGUF</td>
+              <td>~40 GB (BF16)<br />~21 GB (Q8 GGUF)</td>
+              <td>Alibaba. Dec 2025 (2512 = year 25, month 12). Best-in-class bilingual text rendering. Exceptional prompt adherence — can be too literal. Improved human realism vs original release. Qwen-VL vision-language model as text encoder.</td>
+              <td><code>qwen-image-2512-bf16.safetensors</code><br /><code>qwen-image-2512-Q8.gguf</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          Flux.1 Kontext added May 2025. Flux.2, Z-Image Turbo, and Qwen-Image-2512 all released Nov–Dec 2025. Qwen-Image-2512 ranked #1 open-source on AI Arena blind testing (Dec 2025).
+        </div>
+
+        <!-- ============================================================ -->
+        <h2 id="variant-labels">2. Variant &amp; Suffix Labels</h2>
+
+        <p>These suffixes describe training strategy, speed characteristics, and commercial usage rights.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>What It Means</th>
+              <th>Practical Implication</th>
+              <th>Example Models</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>[dev]</strong></td>
+              <td>Open weights, non-commercial</td>
+              <td>Use for research, fine-tuning, LoRA training. Outputs not for commercial use without purchasing a commercial license from the developer.</td>
+              <td>Flux.1 [dev], Flux.2 [dev], Flux.1 Kontext [dev]</td>
+            </tr>
+            <tr>
+              <td><strong>[schnell]</strong></td>
+              <td>Speed-distilled — German for "fast"</td>
+              <td>Fewer steps, Apache 2.0 free commercial use. Best for rapid iteration, demos, real-time. Slight quality trade-off.</td>
+              <td>Flux.1 [schnell]</td>
+            </tr>
+            <tr>
+              <td><strong>[klein]</strong></td>
+              <td>Smaller/efficient — German for "small"</td>
+              <td>Consumer-GPU-friendly version. Apache 2.0. Same architecture as dev sibling, lower VRAM requirement.</td>
+              <td>Flux.2 [klein]</td>
+            </tr>
+            <tr>
+              <td><strong>[pro]</strong></td>
+              <td>Closed-source, API only</td>
+              <td>Top quality tier. No local weights. Paid-per-image API. Best for production where quality outweighs cost.</td>
+              <td>Flux.1 [pro], Flux 1.1 Pro, Flux.1 Kontext [pro/max]</td>
+            </tr>
+            <tr>
+              <td><strong>Ultra / Raw</strong></td>
+              <td>Resolution / style modes (Pro only)</td>
+              <td>Ultra = up to 4MP without speed penalty. Raw = hyper-realistic candid photography with authentic imperfections.</td>
+              <td>Flux 1.1 Pro Ultra, Pro Raw</td>
+            </tr>
+            <tr>
+              <td><strong>Turbo</strong></td>
+              <td>Aggressive step distillation</td>
+              <td>4–8 inference steps instead of 20–50. Near-instant generation. Some quality softening on fine detail.</td>
+              <td>Z-Image Turbo, SDXL-Turbo</td>
+            </tr>
+            <tr>
+              <td><strong>Lightning</strong></td>
+              <td>Even faster distillation (community)</td>
+              <td>1–4 steps. Community-distilled versions of existing models. More quality loss than Turbo.</td>
+              <td>SDXL Lightning, Qwen-Image-Lightning</td>
+            </tr>
+            <tr>
+              <td><strong>Kontext</strong></td>
+              <td>In-context image editing</td>
+              <td>Takes existing image + text prompt, edits coherently. Different from pure T2I. Released May 2025.</td>
+              <td>Flux.1 Kontext [dev/pro/max]</td>
+            </tr>
+            <tr>
+              <td><strong>Edit / Fill</strong></td>
+              <td>Targeted image editing variant</td>
+              <td>Trained for object replacement, inpainting, style transfer. Needs edit-specific workflow nodes.</td>
+              <td>Qwen-Image-Edit-2511, Flux.1 Fill</td>
+            </tr>
+            <tr>
+              <td><strong>LoRA</strong></td>
+              <td>Lightweight fine-tune adapter</td>
+              <td>Small file (10–300 MB) stacked on top of a base model. Changes style, adds characters/concepts.</td>
+              <td><code>flux-realism-lora.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><strong>Checkpoint</strong></td>
+              <td>Full fine-tuned model</td>
+              <td>Complete baked weights with style/subject merged in. Larger (~5–25 GB). Loaded as a checkpoint.</td>
+              <td><code>dreamshaper-xl.safetensors</code>, JibMix-QI</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- ============================================================ -->
+        <h2 id="precision">3. Precision &amp; Quantisation</h2>
+
+        <p>How weights are stored and computed. Image DiT models tolerate quantisation better than UNet models (no conv2d layers), but are more sensitive than LLMs. Prefer Q5_K_M or higher for image quality.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Format</th>
+              <th>Bit-width</th>
+              <th>Notes for Image Models</th>
+              <th>Quality</th>
+              <th>Typical VRAM Impact</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>BF16</strong></td>
+              <td>16-bit brain float</td>
+              <td>Standard for all modern DiT image models (Flux, Qwen-Image, Z-Image). Most numerically stable FP16 variant.</td>
+              <td>Best quality</td>
+              <td>Needs full VRAM: ~16 GB (12B), ~40 GB (20B)</td>
+            </tr>
+            <tr>
+              <td><strong>FP16</strong></td>
+              <td>16-bit float</td>
+              <td>Older GPU standard (pre-Ampere). Functionally equivalent to BF16 for inference. Slightly less stable in training.</td>
+              <td>Excellent</td>
+              <td>Same VRAM as BF16</td>
+            </tr>
+            <tr>
+              <td><strong>FP8</strong></td>
+              <td>8-bit float (E4M3/E5M2)</td>
+              <td>H100/A100 native format. Near-BF16 quality at half memory. Recommended for Qwen-Image-2512 and Flux.2 Dev on 24 GB GPUs.</td>
+              <td>Very good</td>
+              <td>~20 GB for Qwen-Image-2512</td>
+            </tr>
+            <tr>
+              <td><strong>Q8 / INT8 (GGUF)</strong></td>
+              <td>8-bit integer</td>
+              <td>Near-lossless for DiT models. Best GGUF option when VRAM allows. Qwen Q8 GGUF runs on 16 GB 4060 Ti.</td>
+              <td>Near-lossless</td>
+              <td>~21 GB for Qwen-Image-2512</td>
+            </tr>
+            <tr>
+              <td><strong>Q6_K (GGUF)</strong></td>
+              <td>~6-bit</td>
+              <td>Excellent quality. Negligible perceptual difference from Q8. Recommended if Q8 is too large.</td>
+              <td>Near-lossless</td>
+              <td>~16 GB for 12B model</td>
+            </tr>
+            <tr>
+              <td><strong>Q5_K_M (GGUF)</strong></td>
+              <td>~5-bit</td>
+              <td>Good balance for mid-range GPUs. Recommended floor for image models (more sensitive than LLMs).</td>
+              <td>Good</td>
+              <td>~12 GB for 12B model</td>
+            </tr>
+            <tr>
+              <td><strong>Q4_K_M (GGUF)</strong></td>
+              <td>~4-bit</td>
+              <td>Most popular local format. Noticeable softening in fine texture/detail on image models. Widely used for Flux.</td>
+              <td>Acceptable</td>
+              <td>~8–9 GB for 12B model</td>
+            </tr>
+            <tr>
+              <td><strong>NF4</strong></td>
+              <td>4-bit normalfloat (bitsandbytes)</td>
+              <td>Used in HuggingFace BNB quantisation. Marginally better than INT4 at same width.</td>
+              <td>Acceptable</td>
+              <td>Similar to Q4</td>
+            </tr>
+            <tr>
+              <td><strong>NVF4</strong></td>
+              <td>NVIDIA 4-bit float (Nunchaku)</td>
+              <td>RTX 50-series (Blackwell) specific. TensorRT-optimised. Very fast on 5090/5080.</td>
+              <td>Good (Blackwell)</td>
+              <td>RTX 5090/5080 only</td>
+            </tr>
+            <tr>
+              <td><strong>Q3 / Q2 (GGUF)</strong></td>
+              <td>~3–2-bit</td>
+              <td>Heavy quality loss on image models. Only use as absolute last resort on very limited hardware.</td>
+              <td>Poor</td>
+              <td>Minimum VRAM but visible artefacts</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          Rule of thumb: GGUF file size in GB ≈ VRAM required. Q8 Qwen-Image-2512 (21 GB) runs on a 16 GB 4060 Ti with some CPU offloading.
+        </div>
+
+        <!-- ============================================================ -->
+        <h2 id="architectures">4. Architecture Types</h2>
+
+        <p>The underlying model design determines capability ceiling, ecosystem compatibility, and which quantisation formats work.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Architecture</th>
+              <th>Used In</th>
+              <th>How It Works / Key Trait</th>
+              <th>Examples</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>UNet</strong></td>
+              <td>SDXL, SD1.5, SD2.x</td>
+              <td>Encoder-decoder with skip connections. Mature, massive community fine-tune ecosystem. Conv2d layers make GGUF quantisation impractical — use FP16/BF16 safetensors.</td>
+              <td><code>sdxl_base_1.0.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><strong>DiT</strong><br />(Diffusion Transformer)</td>
+              <td>Flux.1/2, SD3, Qwen-Image, Z-Image</td>
+              <td>Pure transformer architecture replacing UNet. Scales better with parameters, superior text following, more robust to quantisation. No skip connections.</td>
+              <td>All Flux models, SD3</td>
+            </tr>
+            <tr>
+              <td><strong>Flow Matching</strong></td>
+              <td>Flux family, SD3</td>
+              <td>Training/sampling method: learns direct flow paths from noise to image rather than iterative DDPM noise removal. Enables fewer inference steps.</td>
+              <td>Flux.1, Flux.2, Flux.1 Kontext</td>
+            </tr>
+            <tr>
+              <td><strong>S3-DiT</strong><br />(Single-Stream DiT)</td>
+              <td>Z-Image, Z-Image Turbo</td>
+              <td>Text and image tokens processed as one unified sequence (not dual-stream like Flux). Enables smaller, faster models without separate cross-attention branches.</td>
+              <td>Z-Image, Z-Image Turbo</td>
+            </tr>
+            <tr>
+              <td><strong>LLM Text Encoder</strong></td>
+              <td>Flux.2, Z-Image, Qwen-Image</td>
+              <td>Uses a large language model as text encoder instead of CLIP/T5. Flux.2: Mistral-3 24B. Z-Image: Qwen3-4B. Qwen-Image: Qwen-VL. Massive improvement in complex prompt understanding.</td>
+              <td>Flux.2 Dev/Klein, Z-Image, Qwen-Image-2512</td>
+            </tr>
+            <tr>
+              <td><strong>VAE</strong><br />(Variational Autoencoder)</td>
+              <td>All models</td>
+              <td>Compresses pixel images to/from latent space. Separate swappable component. Quality affects colour accuracy, sharpness, and fine detail. Each model family has its own VAE.</td>
+              <td><code>ae.safetensors</code> (Flux.1), <code>flux2-vae.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><strong>ControlNet</strong></td>
+              <td>SDXL, Flux (via adapters)</td>
+              <td>Add-on model that conditions generation on depth maps, edge maps, pose skeletons, etc. Must match base model architecture.</td>
+              <td><code>controlnet-depth-sdxl.safetensors</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- ============================================================ -->
+        <h2 id="folder-guide">5. ComfyUI Folder Guide</h2>
+
+        <p>ComfyUI scans specific subdirectories under <code>models/</code> for each file type. Wrong folder = model won't appear in dropdowns. The key split for modern models is: the diffusion model, the text encoder(s), and the VAE are all separate files in separate folders.</p>
+
+        <h3 id="folder-reference">Folder Reference</h3>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Folder Path</th>
+              <th>What Goes Here</th>
+              <th>Why / Which Node Loads It</th>
+              <th>Filename Examples</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>models/checkpoints/</code></td>
+              <td>Full all-in-one model files</td>
+              <td>SDXL checkpoints, fine-tuned merged models. Contains UNet + CLIP + VAE baked together in one file. Loaded with "Load Checkpoint" node.</td>
+              <td><code>dreamshaper-xl.safetensors</code><br /><code>sdxl_base_1.0.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><code>models/diffusion_models/</code><br />(also: <code>models/unet/</code>)</td>
+              <td>Standalone diffusion model (DiT/UNet only)</td>
+              <td>Flux.1, Flux.2, SD3, Z-Image, Qwen-Image main model files — no encoders or VAE included. Loaded with "Load Diffusion Model" node. Both folder names are scanned; <code>diffusion_models/</code> is the current standard.</td>
+              <td><code>flux1-dev.safetensors</code><br /><code>flux2-dev-Q4_K_M.gguf</code><br /><code>z-image-turbo.safetensors</code><br /><code>qwen-image-2512-fp8.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><code>models/clip/</code><br />(also: <code>models/text_encoders/</code>)</td>
+              <td>Text encoder models</td>
+              <td>CLIP, T5-XXL, Mistral-3, Qwen3-4B, Qwen-VL — whichever text encoder the model uses. Flux.1 needs both CLIP-L and T5-XXL. Flux.2 needs Mistral-3. Loaded with "DualCLIPLoader" or "CLIPLoader". Both folder names scanned.</td>
+              <td><code>t5xxl_fp8_e4m3fn.safetensors</code><br /><code>clip_l.safetensors</code><br /><code>mistral_3_small_flux2_fp8.safetensors</code><br /><code>qwen2.5-vl-7b-instruct-q8.gguf</code></td>
+            </tr>
+            <tr>
+              <td><code>models/vae/</code></td>
+              <td>Variational Autoencoder</td>
+              <td>Always a separate file for modern models. Every model family needs its own VAE — they are NOT interchangeable. Loaded with "Load VAE" node.</td>
+              <td><code>ae.safetensors</code> (Flux.1)<br /><code>flux2-vae.safetensors</code> (Flux.2)<br /><code>vae-ft-mse-840000-ema-pruned.safetensors</code> (SDXL)</td>
+            </tr>
+            <tr>
+              <td><code>models/loras/</code></td>
+              <td>LoRA adapter files</td>
+              <td>Style/character/concept fine-tune adapters. Must match the base model architecture. Apply with "Load LoRA" node — does not replace the base model, stacks on top of it.</td>
+              <td><code>flux-realism-lora.safetensors</code><br /><code>sdxl-lightning-4step-lora.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><code>models/controlnet/</code></td>
+              <td>ControlNet models</td>
+              <td>Condition generation on depth, edges, pose, etc. Must match base model (SDXL ControlNet ≠ Flux ControlNet). Loaded with "Load ControlNet Model" node.</td>
+              <td><code>controlnet-depth-sdxl.safetensors</code><br /><code>xlabs-flux-depth-controlnet.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><code>models/upscale_models/</code></td>
+              <td>Image upscaling models</td>
+              <td>Post-processing upscalers like RealESRGAN, ESRGAN, 4xUltrasharp. Used after image generation to increase resolution. Loaded with "Load Upscale Model" node.</td>
+              <td><code>RealESRGAN_x4plus.pth</code><br /><code>4x-UltraSharp.pth</code></td>
+            </tr>
+            <tr>
+              <td><code>models/clip_vision/</code></td>
+              <td>CLIP Vision encoder</td>
+              <td>Image understanding encoder used by IP-Adapter, image-to-image conditioning, reference workflows. Different from text CLIP.</td>
+              <td><code>clip-vit-large-patch14.safetensors</code><br /><code>IP-Adapter-Plus-SDXL.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><code>models/ipadapter/</code></td>
+              <td>IP-Adapter models</td>
+              <td>Image Prompt Adapter — lets you use a reference image as a style/content guide alongside text prompts.</td>
+              <td><code>ip-adapter-plus_sdxl_vit-h.safetensors</code><br /><code>ip-adapter-flux.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><code>models/embeddings/</code></td>
+              <td>Textual Inversion embeddings</td>
+              <td>Very small files that teach the model a new token/concept. Mainly used with SD1.5/SDXL. Reference in prompt as <code>&lt;embedding_name&gt;</code>.</td>
+              <td><code>bad-hands-5.pt</code><br /><code>negative-hand-neg.pt</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          <code>models/unet/</code> and <code>models/diffusion_models/</code> are both scanned for the same file type — either works. Current convention is <code>diffusion_models/</code>. Similarly, <code>models/clip/</code> and <code>models/text_encoders/</code> both work for text encoders. GGUF diffusion models (<code>.gguf</code>) go in <code>models/unet/</code> and require the ComfyUI-GGUF custom node. Without it, GGUF files will not load.
+        </div>
+
+        <h3 id="per-model-placement">Per-Model File Placement</h3>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Diffusion Model file →</th>
+              <th>Text Encoder file(s) →</th>
+              <th>VAE file →</th>
+              <th>ComfyUI Node(s) to use</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>SDXL (checkpoint)</strong></td>
+              <td><code>checkpoints/</code></td>
+              <td>(baked in)</td>
+              <td>(baked in)</td>
+              <td>Load Checkpoint node</td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 dev/schnell</strong></td>
+              <td><code>diffusion_models/</code></td>
+              <td><code>clip/</code> (CLIP-L + T5-XXL)</td>
+              <td><code>vae/</code></td>
+              <td>Load Diffusion Model + DualCLIPLoader + Load VAE</td>
+            </tr>
+            <tr>
+              <td><strong>Flux.2 dev/klein</strong></td>
+              <td><code>diffusion_models/</code></td>
+              <td><code>text_encoders/</code> (Mistral-3)</td>
+              <td><code>vae/</code></td>
+              <td>Load Diffusion Model + CLIPLoader + Load VAE</td>
+            </tr>
+            <tr>
+              <td><strong>Z-Image Turbo</strong></td>
+              <td><code>diffusion_models/</code></td>
+              <td><code>text_encoders/</code> (Qwen3-4B)</td>
+              <td><code>vae/</code></td>
+              <td>Load Diffusion Model + CLIPLoader + Load VAE</td>
+            </tr>
+            <tr>
+              <td><strong>Qwen-Image-2512</strong></td>
+              <td><code>diffusion_models/</code></td>
+              <td><code>text_encoders/</code> (Qwen-VL)</td>
+              <td><code>vae/</code></td>
+              <td>Load Diffusion Model + CLIPLoader + Load VAE</td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 Kontext [dev]</strong></td>
+              <td><code>diffusion_models/</code></td>
+              <td><code>clip/</code> (CLIP-L + T5-XXL)</td>
+              <td><code>vae/</code></td>
+              <td>Load Diffusion Model + DualCLIPLoader + Load VAE</td>
+            </tr>
+            <tr>
+              <td><strong>Any GGUF model</strong></td>
+              <td><code>unet/</code> ← use this for <code>.gguf</code></td>
+              <td><code>clip/</code> (GGUF or safetensors)</td>
+              <td><code>vae/</code> (<code>.safetensors</code>)</td>
+              <td>Unet Loader (GGUF) node — requires ComfyUI-GGUF custom node</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          SDXL checkpoints contain all three components in one file, so they use the simpler "Load Checkpoint" node. All modern DiT models (Flux, Qwen, Z-Image) split components into separate files requiring separate loaders.
+        </div>
+
+        <!-- ============================================================ -->
+        <h2 id="filename-decode">6. Reading a Model Filename</h2>
+
+        <p>Two annotated examples covering the most common naming conventions.</p>
+
+        <p><strong>Example A: <code>flux2-dev-Q4_K_M.gguf</code></strong></p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Part</th>
+              <th>Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>flux2-dev</code></td>
+              <td>Model family + variant: Flux version 2, [dev] (open weights, non-commercial, ~32B)</td>
+            </tr>
+            <tr>
+              <td><code>Q4_K_M</code></td>
+              <td>4-bit quantisation, K-quant method, Medium variant</td>
+            </tr>
+            <tr>
+              <td><code>.gguf</code></td>
+              <td>File format — loads via Unet Loader (GGUF) node, place in <code>models/unet/</code> or <code>models/diffusion_models/</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>Text encoder needed: Mistral-3 small → <code>models/text_encoders/</code> &nbsp;|&nbsp; VAE: <code>flux2-vae.safetensors</code> → <code>models/vae/</code></p>
+
+        <p><strong>Example B: <code>qwen-image-2512-fp8.safetensors</code></strong></p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Part</th>
+              <th>Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>qwen-image</code></td>
+              <td>Qwen-Image model family (Alibaba Tongyi)</td>
+            </tr>
+            <tr>
+              <td><code>2512</code></td>
+              <td>Date code: year 25, month 12 → December 2025 revision</td>
+            </tr>
+            <tr>
+              <td><code>fp8</code></td>
+              <td>8-bit float quantisation — ~20 GB, near-BF16 quality</td>
+            </tr>
+            <tr>
+              <td><code>.safetensors</code></td>
+              <td>Safe format, memory-mapped. Place in <code>models/diffusion_models/</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>Text encoder needed: Qwen-VL encoder → <code>models/text_encoders/</code> &nbsp;|&nbsp; VAE → <code>models/vae/</code></p>
+
+        <!-- ============================================================ -->
+        <h2 id="prompt-craft">7. Prompt Craft by Model</h2>
+
+        <p>The text encoder determines what kind of language the model understands. Using SDXL-style keyword prompts on Flux produces mediocre results, and vice versa. Each model family has a distinct prompt dialect tied to its encoder architecture.</p>
+
+        <h3 id="keywords-vs-prose">Keywords vs. Natural Language</h3>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Encoder Type</th>
+              <th>Prompt Style</th>
+              <th>Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>CLIP (SDXL)</strong></td>
+              <td>Short comma-separated keywords + quality tags</td>
+              <td>77-token hard limit. CLIP was trained on image captions, not prose. Understands visual keywords and style tokens better than grammar or relationships.</td>
+            </tr>
+            <tr>
+              <td><strong>T5-XXL (Flux.1)</strong></td>
+              <td>Full sentences, descriptive prose</td>
+              <td>512-token limit. T5 is a sequence-to-sequence language model that understands grammar, relationships, and negation. Long structured descriptions work properly.</td>
+            </tr>
+            <tr>
+              <td><strong>Mistral-3 24B (Flux.2)</strong></td>
+              <td>Complex multi-clause prose, narrative descriptions</td>
+              <td>32,000-token limit. A full LLM. Understands conditional statements, spatial relationships, story context, and nuanced instructions.</td>
+            </tr>
+            <tr>
+              <td><strong>Qwen3-4B (Z-Image)</strong></td>
+              <td>Natural language sentences, bilingual capable</td>
+              <td>LLM encoder. Handles long prompts well. Chinese and English both work natively without translation.</td>
+            </tr>
+            <tr>
+              <td><strong>Qwen-VL (Qwen-Image)</strong></td>
+              <td>Natural language with very precise literal adherence</td>
+              <td>Vision-language model encoder. Follows prompts almost too literally — vague prompts produce mediocre results, precise prompts produce exceptional ones.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 id="per-model-prompts">Per-Model Prompt Reference</h3>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Negative Prompt?</th>
+              <th>Length Sweet Spot</th>
+              <th>Style Guide</th>
+              <th>Example Prompt</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>SDXL 1.0</strong></td>
+              <td>Yes — important for quality</td>
+              <td>50–150 tokens (short)</td>
+              <td>Comma-separated visual keywords. Quality boosters ("best quality", "masterpiece") are trained into SDXL checkpoints and meaningfully improve output. Style modifiers ("cinematic", "oil painting") work well. Avoid sentences with verbs — CLIP doesn't parse grammar reliably.</td>
+              <td><em>masterpiece, best quality, photorealistic portrait of a woman with auburn hair, cinematic lighting, shallow depth of field, sharp focus, 8K, artstation</em></td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 [dev]</strong></td>
+              <td>No — guidance baked in</td>
+              <td>100–300 tokens (medium)</td>
+              <td>Write as if describing a scene to a cinematographer. Full sentences with descriptive adjectives. Specify lighting, mood, and composition in plain English. Quality tags ("masterpiece", "8K") do nothing — they have no special meaning in T5.</td>
+              <td><em>A woman in her mid-thirties sits by a rain-streaked window in a Parisian café. Soft afternoon light filters through the condensation on the glass, casting diffuse shadows across her open notebook. Film grain, 35mm.</em></td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 [schnell]</strong></td>
+              <td>No</td>
+              <td>50–150 tokens (concise)</td>
+              <td>Same natural language style as Flux.1 dev, but shorter prompts work better due to fewer steps. Schnell has less capacity to resolve complex scene descriptions in 1–4 steps.</td>
+              <td><em>A neon-lit Tokyo street at 3am, rain-soaked pavement reflecting purple and pink signs, a lone cyclist in a yellow raincoat.</em></td>
+            </tr>
+            <tr>
+              <td><strong>Flux.2 [dev/klein]</strong></td>
+              <td>No</td>
+              <td>200–1000+ tokens (go long)</td>
+              <td>Use the full power of an LLM encoder. Multi-clause descriptions, conditional statements, spatial relationships, and narrative context all parse correctly. Writing a paragraph-length prompt genuinely improves output.</td>
+              <td><em>A Victorian-era scientist's study, late 19th century. Three gaslights illuminate mahogany shelves lined with brass instruments and leather volumes. On the central desk, a half-dissected mechanical automaton rests beside an open journal with hand-drawn anatomical sketches. Candlelight catches the gears. Muted greens and ambers. Photorealistic, 8K detail.</em></td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 Kontext [dev]</strong></td>
+              <td>No</td>
+              <td>50–200 tokens (edit-focused)</td>
+              <td>Prompts describe the edit to perform, not the full scene. Be specific about what changes and what stays the same. Reference elements from the input image explicitly.</td>
+              <td><em>Change the jacket to a red leather motorcycle jacket, keeping the person's face and pose identical. Background unchanged.</em></td>
+            </tr>
+            <tr>
+              <td><strong>Z-Image Turbo</strong></td>
+              <td>No</td>
+              <td>100–400 tokens</td>
+              <td>Natural language sentences. Qwen3-4B handles complex descriptions well. Chinese prompts work natively — no translation needed.</td>
+              <td><em>An elderly Japanese carpenter in his workshop, surrounded by wood shavings and hand tools hanging in perfect order. Warm window light. Photorealistic, detailed skin texture.</em></td>
+            </tr>
+            <tr>
+              <td><strong>Qwen-Image-2512</strong></td>
+              <td>Optional</td>
+              <td>150–500 tokens</td>
+              <td>Greatest strength and trap: follows prompts almost literally. Vague prompts produce average results; highly detailed prompts produce exceptional ones. Best-in-class for bilingual text rendering — specify Chinese characters in the prompt and they render correctly.</td>
+              <td><em>A glass of iced coffee on a white marble table, top-down view. Ice cubes partially melted. Thin condensation on the glass. Next to it, a small vase with two white flowers and a leather-bound notebook open to a blank page. Natural light from the left. Studio photography style.</em></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 id="universal-principles">Universal Prompt Principles</h3>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Principle</th>
+              <th>Explanation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Lighting first</strong></td>
+              <td>Specifying light source, quality, and direction is one of the highest-leverage additions to any prompt. "Soft window light from the left", "golden hour backlight", "neon sign reflections" dramatically affect output across every model.</td>
+            </tr>
+            <tr>
+              <td><strong>Camera / lens language</strong></td>
+              <td>Focal length, aperture, and perspective terms work across all modern models. "35mm lens", "shallow depth of field", "wide angle distortion", "macro close-up" are understood because these terms appear pervasively in training data captions.</td>
+            </tr>
+            <tr>
+              <td><strong>Avoid SDXL quality tags on DiT models</strong></td>
+              <td>For Flux and Qwen models, tags like "masterpiece", "best quality", "highly detailed", "artstation" are noise, not signal. These tokens carry no special meaning in T5, Mistral-3, or Qwen encoders — they are SDXL-era CLIP vocabulary.</td>
+            </tr>
+            <tr>
+              <td><strong>Negative prompts: SDXL only</strong></td>
+              <td>Negative prompts work on SDXL via CFG. They do nothing on Flux, Z-Image, or Qwen-Image models because guidance is distilled into the weights — there is no unconditional pass for CFG to push against. For SDXL, a standard negative ("blurry, low quality, watermark, deformed hands") meaningfully improves output.</td>
+            </tr>
+            <tr>
+              <td><strong>Composition language</strong></td>
+              <td>Explicit composition instructions work well on modern DiT models. "Rule of thirds", "subject in the lower left", "negative space in the upper right", "symmetrical composition" are all correctly parsed by T5/LLM encoders.</td>
+            </tr>
+            <tr>
+              <td><strong>Iterative refinement</strong></td>
+              <td>Start with a concise core prompt, generate, then add detail to weak areas. Adding 20 words of specificity to a detail that came out wrong is more effective than writing a 400-word prompt from scratch.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          Token limits are maximums, not targets. Flux.1 dev produces excellent results at 100–150 tokens for most scenes. The advantage of Mistral-3 in Flux.2 is not that you need to write 32K tokens — it's that when your scene genuinely requires complex relational descriptions, the model can resolve them correctly rather than mangling the grammar.
+        </div>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-05</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

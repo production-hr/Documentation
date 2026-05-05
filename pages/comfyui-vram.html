@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ComfyUI: VRAM &amp; Hardware Management — Archive</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Guides</span>
+        <span>2026-05-05</span>
+        <span>8 min read</span>
+      </div>
+
+      <h1 class="doc-title">ComfyUI: VRAM &amp; Hardware Management</h1>
+
+      <p class="doc-lede">
+        What models realistically fit on which GPU tier, strategies to reduce VRAM consumption
+        without sacrificing quality, precision format selection, and live monitoring commands.
+      </p>
+
+      <article class="prose">
+
+        <p class="dropcap">
+          VRAM is the primary bottleneck for local image generation. The GPU has to hold the
+          model weights, the intermediate activations, and the latent tensor simultaneously
+          during the sampling loop — and then spike again during VAE decode. Understanding
+          where the pressure is tells you which knob to turn when you're close to the limit.
+        </p>
+
+        <h2 id="what-fits">What Fits on What GPU</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>GPU / VRAM</th>
+              <th>Comfortable Models</th>
+              <th>Notes &amp; Strategies</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>6 GB</strong><br />(RTX 3060, 4060)</td>
+              <td>SDXL (with <code>--medvram</code>)<br />Flux.1 Q4 GGUF (tight)</td>
+              <td>SDXL runs at ~4–6 GB with medvram. Flux.1 Q4 GGUF needs ~8–9 GB so requires <code>--lowvram</code> + CPU offload for the text encoder. SD1.5 runs comfortably.</td>
+            </tr>
+            <tr>
+              <td><strong>8 GB</strong><br />(RTX 3070, 4060 Ti 8 GB)</td>
+              <td>SDXL native<br />Flux.1 Q4–Q5 GGUF<br />Z-Image Turbo Q4</td>
+              <td>The sweet spot for SDXL. Flux.1 Q4 GGUF fits with ~1 GB headroom. Z-Image Q4 is comfortable. Qwen-Image requires heavy offloading.</td>
+            </tr>
+            <tr>
+              <td><strong>10–12 GB</strong><br />(RTX 3080, 4070)</td>
+              <td>Flux.1 dev Q5–Q6<br />Flux.2 klein Q4<br />Z-Image BF16</td>
+              <td>Flux.1 dev Q5_K_M (~12 GB) is the quality/VRAM sweet spot for this tier. Z-Image BF16 (~16 GB) needs <code>--lowvram</code>. Flux.2 klein Q4 fits well.</td>
+            </tr>
+            <tr>
+              <td><strong>16 GB</strong><br />(RTX 3080 Ti, 4080, 4060 Ti 16 GB)</td>
+              <td>Flux.1 dev BF16<br />Flux.2 klein Q5+<br />Qwen-Image Q8 (tight)</td>
+              <td>Flux.1 dev BF16 runs natively. Qwen-Image Q8 GGUF (~21 GB) needs partial CPU offload. Flux.2 klein BF16 fits with headroom.</td>
+            </tr>
+            <tr>
+              <td><strong>24 GB</strong><br />(RTX 3090, 4090, 4070 Ti Super)</td>
+              <td>Flux.1 dev BF16<br />Flux.2 dev FP8<br />Qwen-Image FP8</td>
+              <td>The professional local tier. Flux.2 dev FP8 (~20 GB) runs natively. Qwen-Image FP8 fits. BF16 Flux.1 with LoRA and ControlNet simultaneously.</td>
+            </tr>
+            <tr>
+              <td><strong>32–40 GB</strong><br />(RTX 6000, A6000, dual GPU)</td>
+              <td>Flux.2 dev BF16<br />Qwen-Image BF16</td>
+              <td>Flux.2 dev BF16 (~32–40 GB) runs natively. Qwen-Image BF16 (~40 GB) needs this tier. Dual consumer GPU setups with NVLink can pool VRAM.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          <div class="callout__label">Rule of thumb</div>
+          GGUF file size in GB ≈ VRAM needed. A 9 GB GGUF file needs approximately 9–10 GB
+          VRAM. Always leave 1–2 GB headroom for the VAE decode step, which spikes VRAM
+          briefly.
+        </div>
+
+        <h2 id="reducing-vram">Reducing VRAM Usage — Strategy Guide</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Strategy</th>
+              <th>VRAM Saving</th>
+              <th>How To Apply</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Use a quantised model (GGUF Q4–Q5)</td>
+              <td>30–50% vs BF16</td>
+              <td>Download the Q4_K_M or Q5_K_M GGUF version of your model. Install ComfyUI-GGUF node. Use Unet Loader (GGUF) node. Quality impact is minor at Q5, noticeable at Q4 on fine detail.</td>
+            </tr>
+            <tr>
+              <td><code>--medvram</code> launch flag</td>
+              <td>~20–30%</td>
+              <td>Offloads model components to RAM when not actively computing. Slower generation but fits larger models. Try this before <code>--lowvram</code>.</td>
+            </tr>
+            <tr>
+              <td><code>--lowvram</code> launch flag</td>
+              <td>~40–60%</td>
+              <td>Aggressive layer-by-layer offloading. Can run very large models on small VRAM but generation is significantly slower. Last resort.</td>
+            </tr>
+            <tr>
+              <td><code>--fp8_e4m3fn</code> launch flag</td>
+              <td>~40% vs BF16</td>
+              <td>Loads weights in FP8. Near-BF16 quality on Ampere+ GPUs (RTX 30xx+). The best VRAM/quality trade-off without switching model format.</td>
+            </tr>
+            <tr>
+              <td>VAE Decode (Tiled) node</td>
+              <td>Prevents VAE spike</td>
+              <td>Replace the standard VAE Decode node with VAE Decode (Tiled). Essential when generating at 2048px+ to prevent OOM errors during the final decode step.</td>
+            </tr>
+            <tr>
+              <td>Reduce batch size</td>
+              <td>Linear</td>
+              <td>Batch size 4 uses ~4× the VRAM of batch size 1. Drop to batch 1 if hitting limits.</td>
+            </tr>
+            <tr>
+              <td>Lower resolution first pass</td>
+              <td>Quadratic</td>
+              <td>Generate at 768px instead of 1024px, then upscale + img2img at denoise 0.4–0.5. The VRAM savings on the generation pass are significant.</td>
+            </tr>
+            <tr>
+              <td>Unload model between runs</td>
+              <td>Full model VRAM</td>
+              <td>Add a Free Memory node (from ComfyUI-Manager extras) at the end of your workflow to release model VRAM after generation. Useful when switching between different models.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="precision-formats">Precision Formats — Choosing for Your Hardware</h2>
+
+        <p>
+          Quick decision guide for the most common hardware scenarios. See the AI Image
+          Models Reference for the full precision comparison table.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Your Situation</th>
+              <th>Recommended Format</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>RTX 30xx / 40xx, 16+ GB VRAM</td>
+              <td>BF16 safetensors — native precision, best quality, no conversion needed.</td>
+            </tr>
+            <tr>
+              <td>RTX 30xx / 40xx, 8–12 GB VRAM</td>
+              <td>GGUF Q5_K_M — best quality/VRAM balance. Q4_K_M if Q5 is too large. Avoid Q3 and below for image models.</td>
+            </tr>
+            <tr>
+              <td>RTX 30xx / 40xx, any VRAM — want speed</td>
+              <td>FP8 via <code>--fp8_e4m3fn</code> flag. Halves memory at ~95% quality. Requires Ampere (RTX 30xx+).</td>
+            </tr>
+            <tr>
+              <td>RTX 50xx (Blackwell)</td>
+              <td>NVF4 / Nunchaku format — TensorRT-optimised 4-bit specific to Blackwell. Very fast. Use nunchaku-flux nodes.</td>
+            </tr>
+            <tr>
+              <td>AMD GPU (ROCm)</td>
+              <td>BF16 or FP16 safetensors. GGUF support is less mature on ROCm. Avoid FP8 (poor ROCm support).</td>
+            </tr>
+            <tr>
+              <td>CPU-only (no GPU)</td>
+              <td>GGUF Q4 or Q3 — the only practical option. Expect 5–30 minutes per image. Use <code>--cpu</code> launch flag.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="monitoring">Monitoring VRAM Usage</h2>
+
+        <p>
+          Watch VRAM in real-time to understand where your headroom is and diagnose OOM
+          errors before they crash a run.
+        </p>
+
+        <h3>Live monitor — updates every 2 seconds</h3>
+        <pre><code>nvidia-smi dmon -s u -d 2</code></pre>
+
+        <h3>One-shot VRAM check</h3>
+        <pre><code>nvidia-smi --query-gpu=memory.used,memory.free,memory.total --format=csv</code></pre>
+
+        <p>
+          OOM (out of memory) errors in ComfyUI show as red nodes or a crash message in the
+          browser console. When OOM occurs: interrupt the generation, apply one of the
+          strategies in the table above, and retry. ComfyUI usually recovers without a
+          restart.
+        </p>
+
+        <div class="callout callout--note">
+          <div class="callout__label">Note</div>
+          The ComfyUI console (the terminal window where you ran <code>python main.py</code>)
+          shows detailed error output including CUDA OOM messages. Always check it when
+          something goes wrong in the browser UI.
+        </div>
+
+        <hr />
+
+        <p>
+          Return to <a href="comfyui-installation.html">Installation &amp; Setup</a> or
+          <a href="comfyui-workflows.html">Building Your First Workflow</a> if you need to
+          revisit earlier steps.
+        </p>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-05</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

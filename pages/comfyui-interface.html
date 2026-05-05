@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ComfyUI: Interface Walkthrough — Archive</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Guides</span>
+        <span>2026-05-05</span>
+        <span>7 min read</span>
+      </div>
+
+      <h1 class="doc-title">ComfyUI: Interface Walkthrough</h1>
+
+      <p class="doc-lede">
+        How to navigate the infinite canvas, read node anatomy, decode wire colours
+        by data type, manage the generation queue, and save and load workflows.
+      </p>
+
+      <article class="prose">
+
+        <p class="dropcap">
+          ComfyUI's interface is a node graph editor running in your browser. Everything
+          happens on a single infinite canvas — there are no menus, panels, or forms beyond
+          what's on the canvas itself and a small top bar. This simplicity is the point: the
+          graph <em>is</em> the program, and every parameter is visible at once.
+        </p>
+
+        <h2 id="canvas-navigation">Canvas Navigation</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>Input</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Pan</td>
+              <td>Middle-click drag <em>or</em> Space + left-click drag</td>
+              <td>Move around the canvas freely. There's no edge — the canvas is infinite in all directions.</td>
+            </tr>
+            <tr>
+              <td>Zoom</td>
+              <td>Scroll wheel</td>
+              <td>Zoom in/out centred on your cursor position.</td>
+            </tr>
+            <tr>
+              <td>Fit to screen</td>
+              <td><kbd>Ctrl + Shift + H</kbd></td>
+              <td>Centres and zooms to show all nodes in the current workflow.</td>
+            </tr>
+            <tr>
+              <td>Select node</td>
+              <td>Left-click</td>
+              <td>Click on a node to select it. Selected nodes show a highlight border.</td>
+            </tr>
+            <tr>
+              <td>Select multiple</td>
+              <td><kbd>Ctrl + left-click</kbd> <em>or</em> drag a selection box</td>
+              <td>Box-select by dragging on empty canvas. Useful for moving groups of nodes.</td>
+            </tr>
+            <tr>
+              <td>Move nodes</td>
+              <td>Left-click drag on node title bar</td>
+              <td>Drag by the title bar (top strip of the node). Dragging the body scrolls the node's content.</td>
+            </tr>
+            <tr>
+              <td>Delete node</td>
+              <td>Select + <kbd>Delete</kbd> key <em>or</em> right-click → Remove</td>
+              <td>Removing a node also removes its connections.</td>
+            </tr>
+            <tr>
+              <td>Add node</td>
+              <td>Right-click on empty canvas → Add Node</td>
+              <td>Opens the node browser tree. Or double-click on empty canvas in newer ComfyUI versions.</td>
+            </tr>
+            <tr>
+              <td>Group nodes</td>
+              <td>Select multiple → <kbd>Ctrl + G</kbd></td>
+              <td>Creates a Group box. Useful for labelling sections of a complex workflow.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="node-anatomy">Node Anatomy</h2>
+
+        <p>
+          Every node has the same structure: a title bar at the top, input slots on the left
+          edge, output slots on the right edge, and parameter widgets in the body.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Part</th>
+              <th>Where</th>
+              <th>What It Does</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Title bar</td>
+              <td>Top strip</td>
+              <td>Shows the node name. Click and drag to move the node. Right-click for node options (mute, bypass, clone, pin).</td>
+            </tr>
+            <tr>
+              <td>Input slots</td>
+              <td>Left edge — circles/dots</td>
+              <td>Receive connections from other nodes. A slot accepts only the matching data type — mismatched connections are rejected. Unconnected required inputs show in red.</td>
+            </tr>
+            <tr>
+              <td>Output slots</td>
+              <td>Right edge — circles/dots</td>
+              <td>Send data to other nodes. One output can connect to multiple inputs simultaneously.</td>
+            </tr>
+            <tr>
+              <td>Widgets</td>
+              <td>Node body</td>
+              <td>Dropdowns, sliders, text fields, seed inputs — the direct parameters (steps, CFG, sampler, prompt text, etc.). Widgets can be converted to input slots via right-click → Convert to Input.</td>
+            </tr>
+            <tr>
+              <td>Mute toggle</td>
+              <td>Right-click → Mute</td>
+              <td>Greyed-out node is bypassed — its outputs pass through as if it weren't there. Useful for A/B testing (e.g. muting a LoRA).</td>
+            </tr>
+            <tr>
+              <td>Bypass</td>
+              <td>Right-click → Bypass</td>
+              <td>Passes inputs directly to outputs without processing. Different from Mute for nodes with pass-through behaviour.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="wire-colours">Wire Colours — Data Types</h2>
+
+        <p>
+          Wires are colour-coded by data type. You cannot connect outputs to inputs of a
+          different type — ComfyUI will refuse the connection. Knowing the colours tells you
+          at a glance what a slot expects.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Colour</th>
+              <th>Data Type</th>
+              <th>What It Carries</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Yellow / Gold</td>
+              <td><code>MODEL</code></td>
+              <td>The loaded diffusion model (UNet or DiT). Flows from Load Checkpoint or Load Diffusion Model into the KSampler.</td>
+            </tr>
+            <tr>
+              <td>Orange</td>
+              <td><code>CONDITIONING</code></td>
+              <td>The text embedding output from the CLIP Text Encode node. Positive and negative conditioning are both this type.</td>
+            </tr>
+            <tr>
+              <td>Violet / Purple</td>
+              <td><code>LATENT</code></td>
+              <td>A latent image tensor — the compressed representation the diffusion model works in. Flows from Empty Latent Image (or VAE Encode) into KSampler, then out to VAE Decode.</td>
+            </tr>
+            <tr>
+              <td>Red / Pink</td>
+              <td><code>IMAGE</code></td>
+              <td>A decoded pixel image tensor. Output of VAE Decode, input to Save Image / Preview Image, or to VAE Encode for img2img.</td>
+            </tr>
+            <tr>
+              <td>Pink (lighter)</td>
+              <td><code>VAE</code></td>
+              <td>The loaded VAE model. Flows from Load VAE into KSampler (Flux) or VAE Decode / VAE Encode nodes.</td>
+            </tr>
+            <tr>
+              <td>Cyan / Teal</td>
+              <td><code>CLIP</code></td>
+              <td>The loaded text encoder. Flows from Load Checkpoint or DualCLIPLoader / CLIPLoader into CLIP Text Encode nodes.</td>
+            </tr>
+            <tr>
+              <td>Green</td>
+              <td><code>INT / FLOAT</code></td>
+              <td>Integer or float values — steps, seed, width, height, CFG scale, etc.</td>
+            </tr>
+            <tr>
+              <td>Light blue</td>
+              <td><code>STRING</code></td>
+              <td>Text strings — prompt text before encoding.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="queue-system">The Queue System</h2>
+
+        <p>
+          ComfyUI runs generations through a queue. Understanding the queue prevents confusion
+          about why nothing is happening or why changes aren't applying.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Concept</th>
+              <th>Explanation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Queue Prompt (<kbd>Ctrl + Enter</kbd>)</td>
+              <td>Adds the current workflow to the queue. The current state of all widgets is captured at this moment — changes made after queuing don't affect queued items.</td>
+            </tr>
+            <tr>
+              <td>Queue size</td>
+              <td>You can queue multiple generations. They run sequentially. The queue counter in the top bar shows pending items.</td>
+            </tr>
+            <tr>
+              <td>Interrupt</td>
+              <td>The Interrupt button (top bar) stops the current generation mid-run. The partial result is discarded.</td>
+            </tr>
+            <tr>
+              <td>Clear Queue</td>
+              <td>Removes all pending (not yet started) items from the queue. Does not interrupt the currently running generation.</td>
+            </tr>
+            <tr>
+              <td>Auto Queue</td>
+              <td>Toggle in the queue panel — automatically re-queues the workflow after each generation completes. Useful for batch runs. Combine with a random seed to get varied outputs continuously.</td>
+            </tr>
+            <tr>
+              <td>Seed behaviour</td>
+              <td><strong>Fixed seed:</strong> same seed = same image (deterministic). <strong>Randomise:</strong> a new random seed every run. <strong>Increment:</strong> seed +1 each run. Set via the seed widget's mode dropdown on the KSampler.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="saving-loading">Saving &amp; Loading Workflows</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>How</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Save workflow</td>
+              <td><kbd>Ctrl + S</kbd> or top menu → Save. Saves a <code>.json</code> file. This JSON contains every node, its position, all widget values, and all connections — the complete workflow state.</td>
+            </tr>
+            <tr>
+              <td>Load workflow</td>
+              <td>Drag and drop a <code>.json</code> file onto the canvas, or <kbd>Ctrl + O</kbd>. Replaces the current canvas entirely.</td>
+            </tr>
+            <tr>
+              <td>Load from image</td>
+              <td>Drag and drop a <code>.png</code> image generated by ComfyUI onto the canvas. ComfyUI embeds the full workflow JSON in the image metadata — drag the output image in to restore the exact workflow that generated it.</td>
+            </tr>
+            <tr>
+              <td>Default workflow</td>
+              <td>The canvas loads a basic SDXL-style workflow on first run. Save your own starting templates and load them to avoid rebuilding from scratch.</td>
+            </tr>
+            <tr>
+              <td>Workflow from web</td>
+              <td>Many workflows are shared as <code>.json</code> files or as images with embedded metadata on OpenArt.ai, the ComfyUI GitHub discussions, and Reddit. Drag them directly onto your canvas.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          <div class="callout__label">Tip</div>
+          Always save workflows as images (Save Image node output) rather than just the
+          <code>.json</code> — the image carries the full workflow inside it, so you have the
+          output and the recipe in one file.
+        </div>
+
+        <hr />
+
+        <p>
+          Continue to <a href="comfyui-workflows.html">Building Your First Workflow</a> to
+          put these concepts into practice with step-by-step SDXL and Flux.1 builds.
+        </p>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-05</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

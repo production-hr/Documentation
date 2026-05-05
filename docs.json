@@ -21,6 +21,51 @@
       "excerpt": "Reference page showing every typographic and structural element available.",
       "tags": ["reference", "design"],
       "updated": "2026-05-05"
+    },
+    {
+      "id": "comfyui-installation",
+      "title": "ComfyUI: Installation & Setup",
+      "category": "Guides",
+      "file": "pages/comfyui-installation.html",
+      "excerpt": "Install ComfyUI on Windows with CUDA, Manager, launch flags, and update workflow.",
+      "tags": ["comfyui", "installation", "setup", "cuda"],
+      "updated": "2026-05-05"
+    },
+    {
+      "id": "comfyui-interface",
+      "title": "ComfyUI: Interface Walkthrough",
+      "category": "Guides",
+      "file": "pages/comfyui-interface.html",
+      "excerpt": "Canvas navigation, node anatomy, wire colour types, the queue, and workflow I/O.",
+      "tags": ["comfyui", "interface", "nodes", "canvas"],
+      "updated": "2026-05-05"
+    },
+    {
+      "id": "comfyui-workflows",
+      "title": "ComfyUI: Building Your First Workflow",
+      "category": "Guides",
+      "file": "pages/comfyui-workflows.html",
+      "excerpt": "Step-by-step SDXL and Flux.1 txt2img workflows, img2img, and key node reference.",
+      "tags": ["comfyui", "workflow", "sdxl", "flux"],
+      "updated": "2026-05-05"
+    },
+    {
+      "id": "comfyui-vram",
+      "title": "ComfyUI: VRAM & Hardware Management",
+      "category": "Guides",
+      "file": "pages/comfyui-vram.html",
+      "excerpt": "GPU tier compatibility, VRAM reduction strategies, precision formats, and monitoring.",
+      "tags": ["comfyui", "vram", "hardware", "performance"],
+      "updated": "2026-05-05"
+    },
+    {
+      "id": "ai-image-models-reference",
+      "title": "AI Image Models: Reference",
+      "category": "Reference",
+      "file": "pages/ai-image-models-reference.html",
+      "excerpt": "Pipeline components, model landscape, quantisation formats, folder placement, and prompt dialect.",
+      "tags": ["ai", "models", "reference", "flux", "comfyui", "quantisation", "prompts"],
+      "updated": "2026-05-05"
     }
   ]
 }
