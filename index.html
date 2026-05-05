@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Archive — Documentation</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Index</span>
+        <span id="doc-count">—</span>
+      </div>
+
+      <h1 class="doc-title">Everything, in one place.</h1>
+
+      <p class="doc-lede">
+        A documentation archive built for reading. No drag-and-drop blocks,
+        no rich-text purgatory, no Notion sluggishness — just hypertext,
+        the way it was meant to be.
+      </p>
+
+      <div class="prose">
+        <p>
+          Browse by category in the sidebar, search by title or tag, or jump
+          straight into a recent entry below. New pages get added by editing
+          <code>docs.json</code> and dropping an HTML file into <code>pages/</code>.
+        </p>
+      </div>
+
+      <div class="index-grid" data-index-grid></div>
+
+      <footer class="doc-footer">
+        <span>Built with HTML, served as-is.</span>
+        <span>Updated <span id="last-updated">today</span></span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="assets/js/site.js"></script>
+  <script>
+    fetch('docs.json').then(r => r.json()).then(m => {
+      document.getElementById('doc-count').textContent =
+        m.docs.length + ' ' + (m.docs.length === 1 ? 'entry' : 'entries');
+      const latest = m.docs.map(d => d.updated).filter(Boolean).sort().pop();
+      if (latest) document.getElementById('last-updated').textContent = latest;
+    }).catch(()=>{});
+  </script>
+</body>
+</html>

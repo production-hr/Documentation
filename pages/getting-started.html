@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Getting Started — Archive</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Meta</span>
+        <span>2026-05-05</span>
+        <span>4 min read</span>
+      </div>
+
+      <h1 class="doc-title">Getting Started</h1>
+
+      <p class="doc-lede">
+        How this documentation system works, why it exists, and how to add new pages
+        without breaking anything.
+      </p>
+
+      <article class="prose">
+
+        <p class="dropcap">
+          This repository is a deliberately small, deliberately quiet alternative to the bloated
+          documentation tools most people end up tolerating. There are no databases, no servers,
+          no proprietary formats, no rendering quirks. Every page is a static HTML file. Every
+          page can be opened directly from disk by double-clicking it, or served from any plain
+          HTTP server, or pushed to GitHub Pages without configuration.
+        </p>
+
+        <p>
+          The trade-off is simple: you give up drag-and-drop block editors and the illusion of
+          collaborative magic. In exchange you get formatting that does what you tell it to,
+          files that will still open in twenty years, and a typography stack that respects the
+          reader.
+        </p>
+
+        <h2 id="structure">Repository structure</h2>
+
+        <pre><code>.
+├── index.html              ← landing page with grid of all docs
+├── docs.json               ← manifest: nav and metadata live here
+├── assets/
+│   ├── css/style.css       ← all styling
+│   ├── js/site.js          ← builds nav, powers search
+│   ├── fonts/              ← optional self-hosted fonts
+│   └── img/                ← images referenced by pages
+├── pages/                  ← every doc page goes here
+│   ├── getting-started.html
+│   └── style-guide.html
+├── templates/
+│   └── page.html           ← copy this to start a new doc
+└── README.md</code></pre>
+
+        <h2 id="adding">Adding a new page</h2>
+
+        <ol>
+          <li>Copy <code>templates/page.html</code> into <code>pages/</code> and rename it (kebab-case, e.g. <code>q3-roadmap.html</code>).</li>
+          <li>Fill in the title, lede, meta line, and body.</li>
+          <li>Add an entry to <code>docs.json</code> so it appears in the sidebar and the index grid.</li>
+          <li>Commit. Push. Done.</li>
+        </ol>
+
+        <div class="callout callout--note">
+          <div class="callout__label">Note</div>
+          The sidebar and index grid are built at runtime from <code>docs.json</code>. You never
+          edit nav links by hand. If a page exists but isn't listed in the manifest, it works as
+          a deep link but won't appear in navigation — useful for drafts.
+        </div>
+
+        <h2 id="manifest">The manifest format</h2>
+
+        <p>
+          Each entry in <code>docs.json</code> looks like this:
+        </p>
+
+        <pre><code>{
+  "id": "q3-roadmap",
+  "title": "Q3 Roadmap",
+  "category": "Planning",
+  "file": "pages/q3-roadmap.html",
+  "excerpt": "What we're shipping between July and September.",
+  "tags": ["planning", "roadmap"],
+  "updated": "2026-05-05"
+}</code></pre>
+
+        <p>
+          The <code>category</code> field controls how docs are grouped in the sidebar. Use
+          consistent category names — <code>"Engineering"</code> and <code>"engineering"</code>
+          will produce two separate groups.
+        </p>
+
+        <h2 id="claude-workflow">Working with Claude</h2>
+
+        <p>
+          The intended workflow is to ask Claude to create or update pages. Useful prompts:
+        </p>
+
+        <ul>
+          <li>"Add a new doc called X about Y, category Z."</li>
+          <li>"Update the section on N in <code>pages/foo.html</code> with this new info: …"</li>
+          <li>"Refactor <code>pages/bar.html</code> into three smaller pages, update the manifest."</li>
+          <li>"Add a tag <code>deprecated</code> to every doc in the Legacy category."</li>
+        </ul>
+
+        <p>
+          Because everything is plain text, Claude can edit pages, restructure the manifest, and
+          keep the index consistent without round-tripping through any opaque format.
+        </p>
+
+        <h2 id="hosting">Viewing and hosting</h2>
+
+        <h3>Locally</h3>
+        <p>
+          The fastest way to view the site locally is a one-liner from the repo root:
+        </p>
+        <pre><code>python3 -m http.server 8000</code></pre>
+        <p>
+          Then open <code>http://localhost:8000</code>. You can also open <code>index.html</code>
+          directly with <code>file://</code>, but some browsers block <code>fetch()</code> on
+          local files, which means the sidebar nav will fail to load. Use the local server.
+        </p>
+
+        <h3>GitHub Pages</h3>
+        <ol>
+          <li>Push the repo to GitHub.</li>
+          <li>Settings → Pages → Source: <code>main</code> branch, root directory.</li>
+          <li>Wait ~30 seconds. Visit <code>https://&lt;user&gt;.github.io/&lt;repo&gt;/</code>.</li>
+        </ol>
+
+        <div class="callout callout--warn">
+          <div class="callout__label">Caveat</div>
+          If the repo is hosted at a subpath (e.g. <code>/my-docs/</code>), all internal links
+          remain relative, so it works without modification. If you map a custom domain, also
+          works without modification.
+        </div>
+
+        <hr />
+
+        <p>
+          That's the whole system. Read the <a href="style-guide.html">Style Guide</a> next to
+          see every formatting element available.
+        </p>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-05</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

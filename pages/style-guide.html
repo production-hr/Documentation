@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Style Guide — Archive</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Meta</span>
+        <span>2026-05-05</span>
+        <span>Reference</span>
+      </div>
+
+      <h1 class="doc-title">Style Guide</h1>
+
+      <p class="doc-lede">
+        Every typographic element, callout type, and structural pattern available in the
+        documentation system, in one place. Use this as a copy-paste reference.
+      </p>
+
+      <article class="prose">
+
+        <p class="dropcap">
+          The first paragraph of any doc can use a drop cap by adding the class
+          <code>dropcap</code> to it. The opening letter pulls in a heavier weight from the
+          variable font and tints in the accent color. It's a small editorial flourish that
+          signals the start of substantive content.
+        </p>
+
+        <p>
+          Body text uses a variable serif (Fraunces) optimized for long-form reading. Inline
+          formatting includes <strong>bold for emphasis</strong>, <em>italics for titles or
+          stress</em>, <a href="#">links with accent underline</a>, and
+          <code>inline code</code> for technical tokens.
+        </p>
+
+        <h2 id="headings">Headings and hierarchy</h2>
+
+        <p>
+          The page uses one <code>h1.doc-title</code> for the document title, then h2 → h4
+          inside <code>.prose</code>. Each h2 gets a section symbol prefix; h3 is a normal
+          subhead; h4 becomes a small uppercase label.
+        </p>
+
+        <h3>This is an h3 subheading</h3>
+
+        <p>
+          Used for subsections within an h2 block. Slightly larger than body, no decorations.
+        </p>
+
+        <h4>This is an h4 label</h4>
+
+        <p>
+          Used for inline labels, captions, or tight metadata sections.
+        </p>
+
+        <h2 id="lists">Lists</h2>
+
+        <p>Unordered list:</p>
+        <ul>
+          <li>First item, with the bullet rendered in accent color.</li>
+          <li>Second item, slightly indented from the body text.</li>
+          <li>Third item — items can wrap and the indent is preserved.</li>
+        </ul>
+
+        <p>Ordered list:</p>
+        <ol>
+          <li>Numbers are rendered in a smaller sans-serif weight.</li>
+          <li>This keeps them quiet relative to the content.</li>
+          <li>Useful for step-by-step instructions.</li>
+        </ol>
+
+        <h2 id="code">Code</h2>
+
+        <p>
+          Inline like <code>const x = 42</code> sits inside running prose. Block code lives in a
+          dark slab with monospace font, designed to read like a terminal:
+        </p>
+
+        <pre><code>function helloWorld() {
+  return "documentation that doesn't suck";
+}
+
+helloWorld();
+// → "documentation that doesn't suck"</code></pre>
+
+        <h2 id="quotes">Blockquotes</h2>
+
+        <blockquote>
+          A blockquote is rendered with a left rule in the accent color, italic body, and softer
+          text. Use it for pulled quotes or for citing external sources at length.
+        </blockquote>
+
+        <h2 id="callouts">Callouts</h2>
+
+        <div class="callout">
+          <div class="callout__label">Tip</div>
+          The default callout uses the accent color. Wrap content in <code>.callout</code> with
+          a <code>.callout__label</code> child for the heading.
+        </div>
+
+        <div class="callout callout--warn">
+          <div class="callout__label">Warning</div>
+          Use <code>.callout--warn</code> for things the reader should be careful about. The
+          rule and label shift to amber.
+        </div>
+
+        <div class="callout callout--note">
+          <div class="callout__label">Note</div>
+          Use <code>.callout--note</code> for low-priority asides. Muted gray rule.
+        </div>
+
+        <h2 id="tables">Tables</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Element</th>
+              <th>Class</th>
+              <th>Use case</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Drop cap paragraph</td>
+              <td><code>.dropcap</code></td>
+              <td>Opening paragraph of an article</td>
+            </tr>
+            <tr>
+              <td>Lede</td>
+              <td><code>.doc-lede</code></td>
+              <td>Subheading directly under title</td>
+            </tr>
+            <tr>
+              <td>Callout</td>
+              <td><code>.callout</code></td>
+              <td>Tips, warnings, notes</td>
+            </tr>
+            <tr>
+              <td>Card grid</td>
+              <td><code>.index-grid</code></td>
+              <td>Index page</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="dividers">Dividers</h2>
+
+        <p>A horizontal rule renders as a centered fleuron rather than a line:</p>
+
+        <hr />
+
+        <p>Use it sparingly to mark major shifts in topic within a single doc.</p>
+
+        <h2 id="images">Images</h2>
+
+        <p>
+          Drop images into <code>assets/img/</code> and reference them with relative paths from
+          the page (e.g. <code>../assets/img/diagram.png</code>). Images max-width to their
+          container by default. Wrap in <code>&lt;figure&gt;</code> with a
+          <code>&lt;figcaption&gt;</code> if you need captions; styling can be added when needed.
+        </p>
+
+        <h2 id="dark-mode">Dark mode</h2>
+
+        <p>
+          The stylesheet includes a <code>prefers-color-scheme: dark</code> block. The site
+          automatically follows the operating system setting — there is no toggle, by design.
+          Switch your OS theme to see it.
+        </p>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-05</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

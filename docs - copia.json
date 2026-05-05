@@ -1,0 +1,26 @@
+{
+  "site": {
+    "title": "Archive",
+    "subtitle": "Documentation"
+  },
+  "docs": [
+    {
+      "id": "getting-started",
+      "title": "Getting Started",
+      "category": "Meta",
+      "file": "pages/getting-started.html",
+      "excerpt": "How this documentation system works and how to add new pages.",
+      "tags": ["intro", "setup"],
+      "updated": "2026-05-05"
+    },
+    {
+      "id": "style-guide",
+      "title": "Style Guide",
+      "category": "Meta",
+      "file": "pages/style-guide.html",
+      "excerpt": "Reference page showing every typographic and structural element available.",
+      "tags": ["reference", "design"],
+      "updated": "2026-05-05"
+    }
+  ]
+}
