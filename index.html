@@ -18,20 +18,22 @@
     </aside>
 
     <main class="main">
+      <nav class="breadcrumb" data-breadcrumb></nav>
+
       <div class="doc-meta">
-        <span>Index</span>
-        <span id="doc-count">—</span>
+        <span data-page-label>Index</span>
+        <span data-doc-count>—</span>
       </div>
 
-      <h1 class="doc-title">Everything, in one place.</h1>
+      <h1 class="doc-title" data-page-title>Everything, in one place.</h1>
 
-      <p class="doc-lede">
+      <p class="doc-lede" data-root-only>
         A documentation archive built for reading. No drag-and-drop blocks,
         no rich-text purgatory, no Notion sluggishness — just hypertext,
         the way it was meant to be.
       </p>
 
-      <div class="prose">
+      <div class="prose" data-root-only>
         <p>
           Browse by category in the sidebar, search by title or tag, or jump
           straight into a recent entry below. New pages get added by editing
@@ -43,19 +45,11 @@
 
       <footer class="doc-footer">
         <span>Built with HTML, served as-is.</span>
-        <span>Updated <span id="last-updated">today</span></span>
+        <span>Updated <span data-last-updated>—</span></span>
       </footer>
     </main>
   </div>
 
   <script src="assets/js/site.js"></script>
-  <script>
-    fetch('docs.json').then(r => r.json()).then(m => {
-      document.getElementById('doc-count').textContent =
-        m.docs.length + ' ' + (m.docs.length === 1 ? 'entry' : 'entries');
-      const latest = m.docs.map(d => d.updated).filter(Boolean).sort().pop();
-      if (latest) document.getElementById('last-updated').textContent = latest;
-    }).catch(()=>{});
-  </script>
 </body>
 </html>

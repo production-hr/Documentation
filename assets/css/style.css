@@ -171,6 +171,33 @@ body {
   margin-top: 0.5rem;
 }
 
+/* --- Sidebar back link --- */
+.nav-back-list {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 1.5rem;
+}
+.nav-back {
+  display: inline-block;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  color: var(--sidebar-muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.nav-back:hover { color: var(--sidebar-fg); }
+
+/* --- Subsection context label --- */
+.nav-section__label {
+  font-family: var(--sans);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--sidebar-rule);
+}
+
 /* --- Sidebar Nav --- */
 .nav-section {
   margin-bottom: 1.75rem;
@@ -601,12 +628,53 @@ h1.doc-title {
 .doc-footer a:hover { color: var(--accent); }
 
 /* --- Index page --- */
+/* --- Breadcrumb --- */
+.breadcrumb {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.breadcrumb:empty { display: none; }
+.breadcrumb a {
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.breadcrumb a:hover { color: var(--accent); }
+.bc-sep { opacity: 0.35; }
+
 .index-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.25rem;
   margin-top: 2.5rem;
   max-width: 100%;
+}
+
+/* --- Category grouping (subsection drill-down) --- */
+.index-category {
+  grid-column: 1 / -1;
+  margin-bottom: 2.5rem;
+}
+.index-category__title {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--rule);
+}
+.index-category__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
 }
 .doc-card {
   display: block;
@@ -657,6 +725,19 @@ h1.doc-title {
   font-size: 0.9rem;
   line-height: 1.55;
   color: var(--ink-soft);
+}
+
+/* --- Navigation tile (section / subsection cards) --- */
+.doc-card--nav {
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.doc-card--nav .doc-card__title {
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.4rem;
 }
 
 /* --- Print --- */
