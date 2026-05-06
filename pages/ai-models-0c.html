@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>0c. Compatibility &amp; Resolution — AI Image Models</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Reference</span>
+        <span>2026-05-06</span>
+        <span>5 min read</span>
+      </div>
+
+      <h1 class="doc-title">0c. Compatibility &amp; Resolution Constraints</h1>
+
+      <p class="doc-lede">
+        Why VAE, encoder, scheduler, and LoRA components cannot be freely swapped —
+        and the resolution constraints baked into model weights during training.
+      </p>
+
+      <article class="prose">
+
+        <p class="dropcap">
+          The most common sources of errors and degraded output. The core rule: every
+          component was co-trained or matched — mixing components across model families
+          breaks assumptions baked into the weights. A dimension mismatch causes an
+          immediate crash; a semantic mismatch causes silently degraded output.
+        </p>
+
+        <h2 id="compat-vae">VAE ↔ Diffusion Model</h2>
+        <table>
+          <tbody>
+            <tr><th>Why it matters</th><td>VAEs are NOT interchangeable between model families. Each model is trained end-to-end with a specific VAE, and the latent space encoding is baked into the diffusion model weights.</td></tr>
+            <tr><th>What breaks</th><td>Using the wrong VAE produces immediately visible problems: washed-out or oversaturated colours, loss of fine detail, blurry or distorted images. The 4-channel SDXL VAE and the 16-channel Flux VAE encode information completely differently — swapping them is like using the wrong codec to decode a video file. Even within SDXL, the original baked-in VAE has known FP16 precision issues — the fp16-fix VAE is the standard replacement. Flux.2 uses a different VAE than Flux.1.</td></tr>
+            <tr><th>Correct pairings</th><td>Flux.1: <code>ae.safetensors</code> &nbsp;·&nbsp; Flux.2: <code>flux2-vae.safetensors</code> &nbsp;·&nbsp; SDXL: <code>sdxl-vae-fp16-fix.safetensors</code> &nbsp;·&nbsp; Qwen-Image: its own dedicated VAE &nbsp;·&nbsp; Z-Image: Wan2.1 VAE (same team)</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="compat-encoder">Text Encoder ↔ Diffusion Model</h2>
+        <table>
+          <tbody>
+            <tr><th>Why it matters</th><td>Text encoders are architecture-specific. The diffusion model was trained to interpret conditioning from a specific encoder — feeding it vectors from a different encoder produces garbage or an immediate crash.</td></tr>
+            <tr><th>What breaks</th><td>Flux.1 dev expects T5-XXL conditioning at 4096 dims. An SDXL CLIP encoder outputs 768 dims — the dimensions won't even match, causing an immediate crash. For Flux.1 you need BOTH CLIP-L and T5-XXL simultaneously via DualCLIPLoader. Flux.2 requires Mistral-3 — nothing else.</td></tr>
+            <tr><th>Correct pairings</th><td>Flux.1 [dev/schnell/kontext]: CLIP-L + T5-XXL (both required) &nbsp;·&nbsp; Flux.2 [dev/klein]: Mistral-3 Small (24B) &nbsp;·&nbsp; Z-Image: Qwen3-4B &nbsp;·&nbsp; Qwen-Image-2512: Qwen2.5-VL-7B &nbsp;·&nbsp; SDXL: CLIP-L + CLIP-G (both via DualCLIPLoader)</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="compat-scheduler">Scheduler ↔ Model</h2>
+        <table>
+          <tbody>
+            <tr><th>Why it matters</th><td>Schedulers must match the mathematical framework the model was trained with. DDPM-family schedulers (DPM++, Euler, DDIM, Karras) are incompatible with Flow Matching models (Flux).</td></tr>
+            <tr><th>What breaks</th><td>DDPM models are trained to predict noise at discrete timesteps (0–999). Flow Matching models (Flux) use straight-line probability flows — the timesteps mean something completely different. Running DPM++ Karras on Flux produces degraded, incorrect results. SD3 and Flux share the same Flow Matching framework, so their schedulers overlap.</td></tr>
+            <tr><th>Correct pairings</th><td>SDXL: Euler a, DPM++ 2M Karras, DPM++ 3M SDE &nbsp;·&nbsp; Flux.1 / Flux.2: Simple, SGM Uniform (not DPM++ / DDIM) &nbsp;·&nbsp; SD3: same as Flux &nbsp;·&nbsp; Qwen-Image: Euler + Simple (default), DPM++ 3S (faster)</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="compat-lora">LoRA ↔ Base Model</h2>
+        <table>
+          <tbody>
+            <tr><th>Why it matters</th><td>LoRAs encode weight offsets for a specific model architecture. A Flux.1 LoRA cannot be applied to SDXL, and vice versa. Even within Flux, a Flux.1 LoRA on Flux.2 is unreliable.</td></tr>
+            <tr><th>What breaks</th><td>A LoRA file contains matrices shaped to match the exact weight dimensions of its target model. Applying a 12B Flux LoRA to a 3.5B SDXL model fails immediately — dimensions don't match. Multiple LoRAs stack fine within the same model but can conflict stylistically. Loading at strength &gt;1.5 with any LoRA can produce artefacts.</td></tr>
+            <tr><th>Correct pairings</th><td>Flux.1 LoRA → Flux.1 only &nbsp;·&nbsp; Flux.2 LoRA → Flux.2 only &nbsp;·&nbsp; SDXL LoRA → SDXL only &nbsp;·&nbsp; Strength: 0.5–1.0 safe, &gt;1.5 risks artefacts &nbsp;·&nbsp; No hard limit on simultaneous LoRAs but &gt;3–4 often conflicts</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="resolution">Image Resolution Constraints</h2>
+
+        <p>Resolution constraints come from how positional encoding is baked into model weights during training. Generating at the wrong size activates untrained positional combinations, producing artefacts, repeated subjects, or quality degradation.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Native / Optimal</th>
+              <th>Multiple</th>
+              <th>Behaviour</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>SD 1.5</strong></td>
+              <td>512 × 512 px</td>
+              <td>Multiples of 64</td>
+              <td>Trained at 512px. Going above 768px causes repeating patterns. Use Hi-Res Fix or tiled upscaling to go higher.</td>
+              <td>Never generate above 768×768 directly. The UNet's positional encoding breaks at larger sizes.</td>
+            </tr>
+            <tr>
+              <td><strong>SDXL 1.0</strong></td>
+              <td>1024 × 1024 px</td>
+              <td>Multiples of 64</td>
+              <td>Can go to ~1536px on long edge without major issues. Above that, repeating artefacts appear. Non-square aspect ratios work well.</td>
+              <td>Common sizes: 1024×1024, 1216×832, 896×1152, 1344×768. Always multiples of 64 or generation fails.</td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 dev / schnell</strong></td>
+              <td>~1024 × 1024 px</td>
+              <td>Multiples of 16</td>
+              <td>Flexible resolution — can generate at various aspect ratios natively. Has been tested well beyond 1024px without artefacts.</td>
+              <td>Much more flexible than SDXL. Quality degrades gracefully rather than producing artefacts.</td>
+            </tr>
+            <tr>
+              <td><strong>Flux.2 dev</strong></td>
+              <td>~1024 × 1024 px</td>
+              <td>Multiples of 16</td>
+              <td>Same flexibility as Flux.1. The Mistral-3 text encoder supports 32K-token prompts — resolution flexibility matched by improved compositional quality.</td>
+              <td>Pro Ultra mode via API reaches up to 4MP (~2048×2048).</td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 Kontext</strong></td>
+              <td>~1024 × 1024 px</td>
+              <td>Multiples of 16</td>
+              <td>Editing model — resolution typically matched to the input image. Output generally matches the input to preserve coherence.</td>
+              <td>When editing, keep output resolution matching input. Resizing during editing degrades identity preservation.</td>
+            </tr>
+            <tr>
+              <td><strong>Z-Image Turbo</strong></td>
+              <td>~1024 × 1024 px</td>
+              <td>Multiples of 16</td>
+              <td>DiT architecture — flexible resolution. 16 GB VRAM comfortable at 1024px.</td>
+              <td>S3-DiT architecture — resolution flexibility similar to Flux. No known hard ceiling.</td>
+            </tr>
+            <tr>
+              <td><strong>Qwen-Image-2512</strong></td>
+              <td>~1328 × 1328 px</td>
+              <td>Recommend multiples of 16</td>
+              <td>Officially supports: 1:1 (1328×1328), 16:9 (1664×928), 9:16 (928×1664), 4:3 (1472×1140), 3:2 (1584×1056).</td>
+              <td>Use the official aspect ratio sizes where possible — trained on specific resolutions. Native 2K landscape (1664×928) is its strength.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          The "multiples of 64" rule for SDXL/SD1.5 is hard — ComfyUI will round or error. The "multiples of 16" rule for DiT models (Flux, Qwen, Z-Image) is softer but still recommended. The 16-channel VAE in modern models provides better reconstruction at higher resolutions than the 4-channel SDXL VAE.
+        </div>
+
+      </article>
+
+      <nav class="section-nav">
+        <a href="ai-models-0b.html">
+          <span class="section-nav__dir">← Previous</span>
+          <span class="section-nav__title">0b. Component Internals</span>
+        </a>
+        <a href="ai-models-0d.html">
+          <span class="section-nav__dir">Next →</span>
+          <span class="section-nav__title">0d. Generation Modes</span>
+        </a>
+      </nav>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-06</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>0b. Component Internals — AI Image Models</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Reference</span>
+        <span>2026-05-06</span>
+        <span>4 min read</span>
+      </div>
+
+      <h1 class="doc-title">0b. Component Internals</h1>
+
+      <p class="doc-lede">
+        What kind of mathematical object each pipeline component actually is —
+        the internal mechanics that make the compatibility rules intuitive.
+      </p>
+
+      <article class="prose">
+
+        <p class="dropcap">
+          The "what it does" view tells you how to use a component. This section explains
+          what each component actually is — which makes the compatibility rules that follow
+          make intuitive sense. A VAE trained on 4-channel latents and a VAE trained on
+          16-channel latents are not different settings of the same machine; they are
+          different machines with incompatible outputs.
+        </p>
+
+        <h2 id="internals-vae">VAE — Variational Autoencoder</h2>
+        <p>A neural network trained as a lossy compressor. Two halves: an Encoder (pixels → latent) and a Decoder (latent → pixels). "Variational" means it maps to a probability distribution in latent space, not a fixed point.</p>
+        <table>
+          <tbody>
+            <tr><th>Internally</th><td>Trained separately from the diffusion model, then frozen. Compresses a 512×512 RGB image (786K values) into a small latent grid — e.g. 64×64×4 channels (16K values) for SDXL, or 128×128×16 for modern models. The diffusion model never sees pixels; it only manipulates these tiny latents. Because the VAE is lossy, reconstruction is not pixel-perfect — which is fine because the diffusion model fills in details from training anyway.</td></tr>
+            <tr><th>Key facts</th><td>SDXL: 4-channel, 8× spatial compression &nbsp;·&nbsp; Flux / Qwen / Z-Image: 16-channel, 8× spatial compression — richer encoding, better fine detail &nbsp;·&nbsp; Files: <code>ae.safetensors</code> (Flux.1), <code>flux2-vae.safetensors</code> (Flux.2)</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="internals-text-encoder">Text Encoder — CLIP / T5 / LLM</h2>
+        <p>A neural network trained to map text into a high-dimensional vector space that the diffusion model can be conditioned on. The diffusion model learns to associate these vectors with visual concepts during training.</p>
+        <table>
+          <tbody>
+            <tr><th>Internally</th><td>CLIP was trained by matching image-text pairs — it understands visual-semantic similarity but is limited in contextual reasoning. T5 is a sequence-to-sequence language model — it understands grammar, relationships, and negation much better. The encoder output is a tensor [batch, seq_len, hidden_dim] — each token becomes a vector. The diffusion model uses cross-attention at every layer to query this conditioning throughout the denoising process.</td></tr>
+            <tr><th>Key facts</th><td>CLIP-L: 77-token limit, semantic matching &nbsp;·&nbsp; CLIP-G (SDXL): larger CLIP, better style &nbsp;·&nbsp; T5-XXL (Flux.1): 512-token limit, language understanding &nbsp;·&nbsp; Mistral-3 24B (Flux.2): 32K-token limit, full LLM reasoning &nbsp;·&nbsp; Qwen3-4B (Z-Image) &nbsp;·&nbsp; Qwen-VL (Qwen-Image)</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="internals-scheduler">Scheduler — Noise Schedule</h2>
+        <p>A mathematical function that defines how much noise exists at each step of the diffusion process, and how to compute the update from one noisy state to the next. Not a neural network — it's an algorithm.</p>
+        <table>
+          <tbody>
+            <tr><th>Internally</th><td>During training, a random noise level (timestep t) is sampled, noise is added to the image latent, and the model learns to predict what noise was added. During inference, you start at t=T (pure noise) and run backwards. DDPM uses a fixed Markov chain. DPM++ uses ODE solvers to take larger, more accurate steps. Karras uses non-linear noise spacing that concentrates steps where they matter most. Flow Matching (Flux) uses straight-line trajectories in probability space — which is why DDPM schedulers don't work on Flux.</td></tr>
+            <tr><th>Key facts</th><td>DDPM / DDIM: original formulation, 50–1000 steps &nbsp;·&nbsp; DPM++ 2M Karras: best quality/speed for SDXL, ~20 steps &nbsp;·&nbsp; Euler / Euler a: fast SDXL iteration &nbsp;·&nbsp; Simple / SGM Uniform: Flow Matching (Flux) &nbsp;·&nbsp; DPM++ 3S: fast option for Qwen-Image (~10 steps)</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="internals-ksampler">KSampler — Denoising Loop</h2>
+        <p>Not a model — it's the inference loop that calls the diffusion model N times. At each step it asks: "given this noisy latent and this prompt, what noise is here?" then uses the scheduler to take one denoising step.</p>
+        <table>
+          <tbody>
+            <tr><th>Internally</th><td>Essentially: <code>for t in reversed(timesteps): noise_pred = diffusion_model(latent_t, t, conditioning); latent_{t-1} = scheduler.step(noise_pred, latent_t, t)</code>. Also applies Classifier-Free Guidance (CFG): runs the model twice per step (conditioned + unconditional) and extrapolates toward the prompt. CFG=7 means "move 7 steps in the direction of the prompt". Flux bakes guidance in via distillation — CFG=1, one pass per step, twice as fast.</td></tr>
+            <tr><th>Key facts</th><td>Steps: 20–50 standard, 4–8 for distilled &nbsp;·&nbsp; CFG Scale: 7–9 (SDXL), 1.0 (Flux), 3.5 (Flux dev) &nbsp;·&nbsp; Denoise: 1.0 = txt2img, &lt;1.0 = img2img &nbsp;·&nbsp; Seed: controls initial noise pattern</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="internals-lora">LoRA — Low-Rank Adaptation</h2>
+        <p>A fine-tuning technique that adds small trainable matrices alongside the frozen weights of a pre-trained model. At inference, the LoRA weights are merged with the base model at load time. Not a separate network — it modifies the existing one.</p>
+        <table>
+          <tbody>
+            <tr><th>Internally</th><td>Instead of fine-tuning all N billion parameters, LoRA decomposes the weight update into two small matrices: ΔW = A × B, where A and B have rank r (typically 4–64). A 12B parameter model can be personalised with only 10–200 MB of adapter weights. Multiple LoRAs can be stacked. LoRAs trained on Flux.1 dev will NOT work on SDXL — they encode weight offsets for a specific architecture.</td></tr>
+            <tr><th>Key facts</th><td>File size: 10 MB – 300 MB &nbsp;·&nbsp; Rank: 4 (minimal), 16–64 (typical), 128+ (high capacity) &nbsp;·&nbsp; Scale: 0.5–1.0 safe, &gt;1.5 risks artefacts &nbsp;·&nbsp; Must match base model architecture exactly</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="internals-conditioning">Conditioning — Embeddings</h2>
+        <p>The output of the text encoder — the numerical representation of your prompt that guides the denoising process. A tensor of floating-point vectors, one per token, passed into the diffusion model via cross-attention at every layer.</p>
+        <table>
+          <tbody>
+            <tr><th>Internally</th><td>Tensor shape: [1, seq_len, hidden_dim] — e.g. [1, 77, 768] for CLIP-L or [1, 512, 4096] for T5-XXL. Every transformer layer in the diffusion model has cross-attention heads that query this conditioning, asking "how relevant is each token to this patch of the image right now?" This is why longer structured prompts work better with T5/LLM encoders.</td></tr>
+            <tr><th>Key facts</th><td>Positive conditioning: what you want &nbsp;·&nbsp; Negative conditioning: what you don't want (not used in Flux — no unconditional pass) &nbsp;·&nbsp; Empty conditioning: unconditional baseline for CFG &nbsp;·&nbsp; Strength controlled by CFG scale</td></tr>
+          </tbody>
+        </table>
+
+      </article>
+
+      <nav class="section-nav">
+        <a href="ai-models-0a.html">
+          <span class="section-nav__dir">← Previous</span>
+          <span class="section-nav__title">0a. Core Pipeline Components</span>
+        </a>
+        <a href="ai-models-0c.html">
+          <span class="section-nav__dir">Next →</span>
+          <span class="section-nav__title">0c. Compatibility &amp; Resolution</span>
+        </a>
+      </nav>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-06</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

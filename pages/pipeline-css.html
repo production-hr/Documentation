@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Character Pipeline (CSS) — Archive</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+  <style>
+    /* ── Pipeline diagram ─────────────────────────────────── */
+    .pl-wrap {
+      overflow-x: auto;
+      margin: 2rem 0;
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      background: var(--paper-deep);
+      padding: 2rem 1.5rem;
+    }
+
+    .pl {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      gap: 0;
+      min-width: 1100px;
+    }
+
+    /* ── Stage columns ────────────────────────────────────── */
+    .pl-stage {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    /* ── Group boxes ──────────────────────────────────────── */
+    .pl-group {
+      border: 1.5px solid #7A94A8;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #C8D9E5;
+      min-width: 148px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .pl-group            { background: #1a2b38; border-color: #3a5568; }
+      .pl-group__header    { background: #2e4a5e; }
+      .pl-group__header span { color: #ddeaf3; }
+      .pl-group__body      { background: #1a2b38; }
+      .pl-box              { background: #253545; border-color: #3a5568; color: #c8dae6; }
+      .pl-box--var         { background: #3d3218; border-color: #6b5420; color: #e8d4a0; }
+      .pl-box--single      { background: #253545; border-color: #3a5568; color: #c8dae6; }
+      .pl-box--hqgw        { background: #2e4a5e; color: #ddeaf3; }
+      .pl-subhead          { color: #5a8099; }
+      .pl-conn__h          { background: #5a8099; }
+      .pl-conn__h::after   { border-left-color: #5a8099; }
+      .pl-conn__v          { background: #5a8099; }
+      .pl-conn__arm        { background: #5a8099; }
+      .pl-conn__arm::after { border-left-color: #5a8099; }
+    }
+
+    .pl-group__header {
+      background: #7A94A8;
+      padding: 5px 8px;
+      text-align: center;
+    }
+
+    .pl-group__header span {
+      display: block;
+      font-family: var(--sans);
+      font-size: 7.5px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #fff;
+      line-height: 1.3;
+    }
+
+    .pl-group__body {
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    /* ── Individual boxes ─────────────────────────────────── */
+    .pl-box {
+      background: #B8CDD8;
+      border: 1px solid #7A94A8;
+      border-radius: 2px;
+      padding: 6px 8px;
+      font-family: var(--sans);
+      font-size: 7.5px;
+      font-weight: 500;
+      text-align: center;
+      color: #1A2A3A;
+      line-height: 1.35;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .pl-box--var {
+      background: #D4BE82;
+      border-color: #B09040;
+    }
+
+    .pl-subhead {
+      font-family: var(--sans);
+      font-size: 7px;
+      font-weight: 600;
+      color: #4A6070;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 0 0;
+    }
+
+    /* CHARACTER standalone box */
+    .pl-box--single {
+      background: #B8CDD8;
+      border: 1.5px solid #7A94A8;
+      border-radius: 4px;
+      padding: 16px 12px;
+      text-align: center;
+      font-family: var(--sans);
+      color: #1A2A3A;
+      width: 112px;
+    }
+
+    .pl-box--single strong {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .pl-box--single span {
+      font-size: 8px;
+      line-height: 1.4;
+      color: #3A5060;
+    }
+
+    /* HQGW box */
+    .pl-box--hqgw {
+      background: #7A94A8;
+      border: 1.5px solid #5A7480;
+      border-radius: 4px;
+      padding: 14px 10px;
+      text-align: center;
+      font-family: var(--sans);
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #fff;
+      width: 110px;
+      line-height: 1.5;
+    }
+
+    /* ── Connectors ───────────────────────────────────────── */
+    .pl-conn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 28px;
+      position: relative;
+    }
+
+    /* Simple horizontal arrow */
+    .pl-conn__h {
+      width: 100%;
+      height: 2px;
+      background: #4A6070;
+      position: relative;
+    }
+
+    .pl-conn__h::after {
+      content: '';
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      border-left: 7px solid #4A6070;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+
+    /* Branch connector: one input → two outputs */
+    .pl-conn--branch {
+      width: 32px;
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .pl-conn--branch .pl-conn__entry {
+      /* horizontal stub from left */
+      height: 2px;
+      background: #4A6070;
+      width: 12px;
+      align-self: center;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* The vertical spine + two arms is a single absolutely-positioned element */
+    .pl-conn--branch .pl-conn__tree {
+      position: absolute;
+      left: 12px;
+      top: 0;
+      bottom: 0;
+      width: 20px;
+    }
+
+    .pl-conn--branch .pl-conn__spine {
+      position: absolute;
+      left: 0;
+      top: 25%;   /* aligns with top group center */
+      bottom: 25%; /* aligns with bottom group center */
+      width: 2px;
+      background: #4A6070;
+    }
+
+    .pl-conn--branch .pl-conn__arm {
+      position: absolute;
+      left: 0;
+      height: 2px;
+      width: 20px;
+      background: #4A6070;
+    }
+
+    .pl-conn--branch .pl-conn__arm::after {
+      content: '';
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      border-left: 7px solid #4A6070;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+
+    .pl-conn--branch .pl-conn__arm--top {
+      top: 25%;
+    }
+
+    .pl-conn--branch .pl-conn__arm--bottom {
+      bottom: 25%;
+    }
+
+    /* Merge connector: two inputs → one output */
+    .pl-conn--merge {
+      width: 32px;
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .pl-conn--merge .pl-conn__spine {
+      position: absolute;
+      left: 0;
+      top: 25%;
+      bottom: 25%;
+      width: 2px;
+      background: #4A6070;
+    }
+
+    .pl-conn--merge .pl-conn__arm {
+      position: absolute;
+      right: 0;
+      height: 2px;
+      width: 20px;
+      background: #4A6070;
+    }
+
+    .pl-conn--merge .pl-conn__arm::after {
+      content: '';
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      border-left: 7px solid #4A6070;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+
+    .pl-conn--merge .pl-conn__arm--top {
+      top: 25%;
+    }
+
+    .pl-conn--merge .pl-conn__arm--bottom {
+      bottom: 25%;
+    }
+
+    /* Four-way fan connector */
+    .pl-conn--fan {
+      width: 36px;
+    }
+
+    .pl-conn--fan .pl-conn__spine {
+      position: absolute;
+      left: 10px;
+      top: calc(12.5% + 20px);    /* from DFL center down to IMAGES center */
+      bottom: calc(12.5% + 20px);
+      width: 2px;
+      background: #4A6070;
+    }
+
+    .pl-conn--fan .pl-conn__arm {
+      position: absolute;
+      left: 10px;
+      height: 2px;
+      right: 0;
+      background: #4A6070;
+    }
+
+    .pl-conn--fan .pl-conn__arm::after {
+      content: '';
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      border-left: 7px solid #4A6070;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+
+    .pl-conn--fan .pl-conn__entry {
+      position: absolute;
+      left: 0;
+      height: 2px;
+      width: 10px;
+      background: #4A6070;
+      top: 50%;
+    }
+
+    .pl-conn--fan .pl-conn__arm--1 { top: calc(12.5% + 20px); }
+    .pl-conn--fan .pl-conn__arm--2 { top: calc(37.5% + 4px); }
+    .pl-conn--fan .pl-conn__arm--3 { bottom: calc(37.5% + 4px); }
+    .pl-conn--fan .pl-conn__arm--4 { bottom: calc(12.5% + 20px); }
+
+    /* Outputs column: four groups stacked */
+    .pl-outputs {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Reference</span>
+        <span>2026-05-05</span>
+        <span>Diagram</span>
+      </div>
+
+      <h1 class="doc-title">AI Character Pipeline — CSS</h1>
+
+      <p class="doc-lede">The full character pipeline built from HTML <code>&lt;div&gt;</code> elements and CSS — no SVG, no scripts, no dependencies beyond the site stylesheet.</p>
+
+      <article class="prose">
+
+        <p class="dropcap">Pure CSS flowcharts use flexbox for columns, borders for boxes, and <code>::after</code> pseudo-elements for arrowheads. The connectors are regular block elements whose width, height, and border colour draw the lines. What you gain is perfect dark-mode integration and full accessibility — the diagram is real DOM, so screen readers can traverse it. What you lose is fine-grained routing control: complex branch angles require careful positioning math.</p>
+
+        <div class="pl-wrap">
+          <div class="pl">
+
+            <!-- ── Col 1: CHARACTER ─────────────────────────── -->
+            <div class="pl-stage" style="justify-content:center;">
+              <div class="pl-box--single">
+                <strong>Character</strong>
+                <span>Define AGE,<br/>LOOK, ERA, STYLE</span>
+              </div>
+            </div>
+
+            <!-- ── Connector 1→2 ────────────────────────────── -->
+            <div class="pl-conn" style="align-items:center;">
+              <div class="pl-conn__h"></div>
+            </div>
+
+            <!-- ── Col 2: RAW REFERENCE COLLECTION ─────────── -->
+            <div class="pl-stage" style="justify-content:center;">
+              <div class="pl-group" style="width:178px;">
+                <div class="pl-group__header"><span>Raw Reference Collection</span></div>
+                <div class="pl-group__body" style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+                  <div class="pl-box">Character Facial<br/>References</div>
+                  <div class="pl-box">Character<br/>Expressions</div>
+                  <div class="pl-box">Character Body<br/>References</div>
+                  <div class="pl-box">Character Performance<br/>References</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Connector 2→3 (branch) ───────────────────── -->
+            <div class="pl-conn pl-conn--branch" style="position:relative;">
+              <div class="pl-conn__entry"></div>
+              <div class="pl-conn__tree">
+                <div class="pl-conn__spine"></div>
+                <div class="pl-conn__arm pl-conn__arm--top"></div>
+                <div class="pl-conn__arm pl-conn__arm--bottom"></div>
+              </div>
+            </div>
+
+            <!-- ── Col 3: CSGW + PG ─────────────────────────── -->
+            <div class="pl-stage" style="justify-content:space-between;gap:14px;">
+              <div class="pl-group">
+                <div class="pl-group__header">
+                  <span>Character Sheet Generation<br/>Workflow</span>
+                </div>
+                <div class="pl-group__body">
+                  <div class="pl-box">Facial Feature Extraction</div>
+                  <div class="pl-box">Body Proportion Analysis</div>
+                  <div class="pl-box">Style Consistency Cleanup</div>
+                  <div class="pl-box">Review and Approval</div>
+                </div>
+              </div>
+              <div class="pl-group">
+                <div class="pl-group__header"><span>Prompt Generation</span></div>
+                <div class="pl-group__body">
+                  <div class="pl-box">Prompt Extractor Workflow</div>
+                  <div class="pl-box">Manual Curated Prompts</div>
+                  <div class="pl-box">Standard Camera Shot Prompts</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Connector 3→4 (branch) ───────────────────── -->
+            <div class="pl-conn pl-conn--branch" style="position:relative;">
+              <div class="pl-conn__entry"></div>
+              <div class="pl-conn__tree">
+                <div class="pl-conn__spine"></div>
+                <div class="pl-conn__arm pl-conn__arm--top"></div>
+                <div class="pl-conn__arm pl-conn__arm--bottom"></div>
+              </div>
+            </div>
+
+            <!-- ── Col 4: MMD + CPD ─────────────────────────── -->
+            <div class="pl-stage" style="justify-content:space-between;gap:14px;">
+              <div class="pl-group">
+                <div class="pl-group__header"><span>Master Model Definition</span></div>
+                <div class="pl-group__body">
+                  <div class="pl-subhead">Core Identity</div>
+                  <div class="pl-box">Face Model Sheet</div>
+                  <div class="pl-box">Body Model Sheet</div>
+                  <div class="pl-subhead">Variables</div>
+                  <div class="pl-box pl-box--var">Wardrobe / Props</div>
+                  <div class="pl-box pl-box--var">Hairstyles</div>
+                </div>
+              </div>
+              <div class="pl-group">
+                <div class="pl-group__header"><span>Character Prompts Database</span></div>
+                <div class="pl-group__body">
+                  <div class="pl-box">Detailed Performance Prompts</div>
+                  <div class="pl-box">Photoshoot Prompts</div>
+                  <div class="pl-box">Lighting Conditions</div>
+                  <div class="pl-box">Camera Shots</div>
+                  <div class="pl-box">Character Expressions</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Connector 4→5 (merge) ────────────────────── -->
+            <div class="pl-conn pl-conn--merge" style="position:relative;width:36px;">
+              <div class="pl-conn__spine"></div>
+              <div class="pl-conn__arm pl-conn__arm--top"></div>
+              <div class="pl-conn__arm pl-conn__arm--bottom"></div>
+            </div>
+
+            <!-- ── Col 5: HQGW ──────────────────────────────── -->
+            <div class="pl-stage" style="justify-content:center;">
+              <div class="pl-box--hqgw">HQ Image<br/>Generation<br/>Workflow</div>
+            </div>
+
+            <!-- ── Connector 5→6 ────────────────────────────── -->
+            <div class="pl-conn" style="align-items:center;">
+              <div class="pl-conn__h"></div>
+            </div>
+
+            <!-- ── Col 6: HQ IMAGE COLLECTIONS ─────────────── -->
+            <div class="pl-stage" style="justify-content:center;">
+              <div class="pl-group" style="width:140px;">
+                <div class="pl-group__header"><span>HQ Image Collections</span></div>
+                <div class="pl-group__body">
+                  <div class="pl-box">Training Data</div>
+                  <div class="pl-box">Starting Frames</div>
+                  <div class="pl-box">Static Images</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Connector 6→7 (fan) ──────────────────────── -->
+            <div class="pl-conn pl-conn--fan" style="position:relative;">
+              <div class="pl-conn__entry"></div>
+              <div class="pl-conn__spine"></div>
+              <div class="pl-conn__arm pl-conn__arm--1"></div>
+              <div class="pl-conn__arm pl-conn__arm--2"></div>
+              <div class="pl-conn__arm pl-conn__arm--3"></div>
+              <div class="pl-conn__arm pl-conn__arm--4"></div>
+            </div>
+
+            <!-- ── Col 7: Output groups ─────────────────────── -->
+            <div class="pl-outputs">
+              <div class="pl-group" style="width:152px;">
+                <div class="pl-group__header"><span>DeepFaceLab Model</span></div>
+                <div class="pl-group__body">
+                  <div class="pl-box">Face Snap</div>
+                </div>
+              </div>
+              <div class="pl-group" style="width:152px;">
+                <div class="pl-group__header"><span>LoRAs</span></div>
+                <div class="pl-group__body">
+                  <div class="pl-box">
+                    <div class="pl-subhead" style="margin-bottom:3px;">Image LoRA</div>
+                    Flux · Z-Image
+                  </div>
+                  <div class="pl-box">
+                    <div class="pl-subhead" style="margin-bottom:3px;">Video LoRA</div>
+                    WAN 2.1 · WAN Animate<br/>Steady Dancer SVK.2
+                  </div>
+                </div>
+              </div>
+              <div class="pl-group" style="width:152px;">
+                <div class="pl-group__header"><span>Videos</span></div>
+                <div class="pl-group__body">
+                  <div class="pl-box">Video to Video</div>
+                  <div class="pl-box">LipSync</div>
+                  <div class="pl-box">Prompted</div>
+                  <div class="pl-box">Interactive Characters</div>
+                </div>
+              </div>
+              <div class="pl-group" style="width:152px;">
+                <div class="pl-group__header"><span>Images</span></div>
+                <div class="pl-group__body">
+                  <div class="pl-box">Prints</div>
+                  <div class="pl-box">Deck</div>
+                  <div class="pl-box">Promo Material</div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /.pl -->
+        </div><!-- /.pl-wrap -->
+
+        <h2 id="how-it-works">How it works</h2>
+        <p>The outer <code>.pl</code> container is <code>display: flex; flex-direction: row</code>. Each stage column is a flex child that stacks its groups vertically. The connector elements between stages are fixed-width divs; horizontal arrows use a <code>height: 2px</code> block with an <code>::after</code> triangle for the arrowhead. The branch and fan connectors use <code>position: absolute</code> children to draw the vertical spine and horizontal arms.</p>
+
+        <h2 id="tradeoffs">Tradeoffs</h2>
+        <p>CSS diagrams integrate perfectly with the page's typography, spacing, and colour tokens — dark mode works without extra effort. The limitations show up with complex routing: branch connector heights are computed from the rendered layout, so they need to be tuned if content changes. The diagram is real DOM, which aids accessibility but means the HTML is more verbose than the Mermaid source.</p>
+
+        <div class="callout callout--note">
+          <strong>Accessibility:</strong> Unlike SVG or canvas, these boxes are real <code>&lt;div&gt;</code> elements. Adding <code>role="img"</code> on <code>.pl-wrap</code> with an <code>aria-label</code> summarising the pipeline gives screen readers a meaningful description of the diagram as a whole.
+        </div>
+
+        <h2 id="see-also">See also</h2>
+        <ul>
+          <li><a href="pipeline-svg.html">SVG version</a> — inline SVG, pixel-perfect, zero dependencies</li>
+          <li><a href="pipeline-mermaid.html">Mermaid version</a> — text-based diagram syntax, rendered by a CDN script</li>
+        </ul>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-05</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

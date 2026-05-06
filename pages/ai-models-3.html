@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>3. Precision &amp; Quantisation — AI Image Models</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Reference</span>
+        <span>2026-05-06</span>
+        <span>3 min read</span>
+      </div>
+
+      <h1 class="doc-title">3. Precision &amp; Quantisation</h1>
+
+      <p class="doc-lede">
+        How weights are stored and computed — from BF16 to Q4 GGUF — and which
+        formats work best for image DiT models.
+      </p>
+
+      <article class="prose">
+
+        <p>How weights are stored and computed. Image DiT models tolerate quantisation better than UNet models (no conv2d layers), but are more sensitive than LLMs. Prefer Q5_K_M or higher for image quality.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Format</th>
+              <th>Bit-width</th>
+              <th>Notes for Image Models</th>
+              <th>Quality</th>
+              <th>Typical VRAM Impact</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>BF16</strong></td>
+              <td>16-bit brain float</td>
+              <td>Standard for all modern DiT image models (Flux, Qwen-Image, Z-Image). Most numerically stable FP16 variant.</td>
+              <td>Best quality</td>
+              <td>Needs full VRAM: ~16 GB (12B), ~40 GB (20B)</td>
+            </tr>
+            <tr>
+              <td><strong>FP16</strong></td>
+              <td>16-bit float</td>
+              <td>Older GPU standard (pre-Ampere). Functionally equivalent to BF16 for inference. Slightly less stable in training.</td>
+              <td>Excellent</td>
+              <td>Same VRAM as BF16</td>
+            </tr>
+            <tr>
+              <td><strong>FP8</strong></td>
+              <td>8-bit float (E4M3/E5M2)</td>
+              <td>H100/A100 native format. Near-BF16 quality at half memory. Recommended for Qwen-Image-2512 and Flux.2 Dev on 24 GB GPUs.</td>
+              <td>Very good</td>
+              <td>~20 GB for Qwen-Image-2512</td>
+            </tr>
+            <tr>
+              <td><strong>Q8 / INT8 (GGUF)</strong></td>
+              <td>8-bit integer</td>
+              <td>Near-lossless for DiT models. Best GGUF option when VRAM allows. Qwen Q8 GGUF runs on 16 GB 4060 Ti.</td>
+              <td>Near-lossless</td>
+              <td>~21 GB for Qwen-Image-2512</td>
+            </tr>
+            <tr>
+              <td><strong>Q6_K (GGUF)</strong></td>
+              <td>~6-bit</td>
+              <td>Excellent quality. Negligible perceptual difference from Q8. Recommended if Q8 is too large.</td>
+              <td>Near-lossless</td>
+              <td>~16 GB for 12B model</td>
+            </tr>
+            <tr>
+              <td><strong>Q5_K_M (GGUF)</strong></td>
+              <td>~5-bit</td>
+              <td>Good balance for mid-range GPUs. Recommended floor for image models (more sensitive than LLMs).</td>
+              <td>Good</td>
+              <td>~12 GB for 12B model</td>
+            </tr>
+            <tr>
+              <td><strong>Q4_K_M (GGUF)</strong></td>
+              <td>~4-bit</td>
+              <td>Most popular local format. Noticeable softening in fine texture/detail on image models. Widely used for Flux.</td>
+              <td>Acceptable</td>
+              <td>~8–9 GB for 12B model</td>
+            </tr>
+            <tr>
+              <td><strong>NF4</strong></td>
+              <td>4-bit normalfloat (bitsandbytes)</td>
+              <td>Used in HuggingFace BNB quantisation. Marginally better than INT4 at same width.</td>
+              <td>Acceptable</td>
+              <td>Similar to Q4</td>
+            </tr>
+            <tr>
+              <td><strong>NVF4</strong></td>
+              <td>NVIDIA 4-bit float (Nunchaku)</td>
+              <td>RTX 50-series (Blackwell) specific. TensorRT-optimised. Very fast on 5090/5080.</td>
+              <td>Good (Blackwell)</td>
+              <td>RTX 5090/5080 only</td>
+            </tr>
+            <tr>
+              <td><strong>Q3 / Q2 (GGUF)</strong></td>
+              <td>~3–2-bit</td>
+              <td>Heavy quality loss on image models. Only use as absolute last resort on very limited hardware.</td>
+              <td>Poor</td>
+              <td>Minimum VRAM but visible artefacts</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          Rule of thumb: GGUF file size in GB ≈ VRAM required. Q8 Qwen-Image-2512 (21 GB) runs on a 16 GB 4060 Ti with some CPU offloading.
+        </div>
+
+      </article>
+
+      <nav class="section-nav">
+        <a href="ai-models-2.html">
+          <span class="section-nav__dir">← Previous</span>
+          <span class="section-nav__title">2. Variant &amp; Suffix Labels</span>
+        </a>
+        <a href="ai-models-4.html">
+          <span class="section-nav__dir">Next →</span>
+          <span class="section-nav__title">4. Architecture Types</span>
+        </a>
+      </nav>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-06</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

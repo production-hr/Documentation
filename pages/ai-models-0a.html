@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>0a. Core Pipeline Components — AI Image Models</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Reference</span>
+        <span>2026-05-06</span>
+        <span>5 min read</span>
+      </div>
+
+      <h1 class="doc-title">0a. Core Pipeline Components</h1>
+
+      <p class="doc-lede">
+        The six nodes every workflow contains — what they do, how they connect,
+        and the most common mistakes at each stage.
+      </p>
+
+      <article class="prose">
+
+        <div class="callout callout--note">
+          Signal chain: text → Text Encoder → conditioning embedding → KSampler feeds this plus random noise into the Diffusion Model (N times per the Scheduler) → clean latent → VAE Decode → pixel image.
+        </div>
+
+        <h2 id="comp-text-encoder">Text Encoder — CLIP / T5 / LLM</h2>
+        <p>Converts your text prompt into a numerical representation (embedding) the model can work with.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>Older models (SDXL) use CLIP — short prompts, keyword-based. Modern models use T5-XXL or full LLMs (Mistral-3, Qwen3). LLM encoders understand grammar, relationships, and long complex sentences far better.</td></tr>
+            <tr><th>Files by model</th><td>SDXL: CLIP-L + CLIP-G &nbsp;·&nbsp; Flux.1: CLIP-L + T5-XXL &nbsp;·&nbsp; Flux.2: Mistral-3 24B &nbsp;·&nbsp; Z-Image: Qwen3-4B &nbsp;·&nbsp; Qwen-Image: Qwen-VL</td></tr>
+            <tr><th>Common mistake</th><td>Loading the wrong encoder for your model. T5 is the reason Flux handles long descriptive prompts much better than SDXL. Loads separately via DualCLIPLoader / CLIPLoader.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="comp-diffusion-model">Diffusion Model — UNet / DiT</h2>
+        <p>The core image generation engine — takes the text embedding plus a noisy latent and iteratively removes noise to produce your image.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>The main model file (12B or 20B parameters). Does NOT work on pixels — it works entirely in compressed latent space. Does not understand text itself; the text encoder hands it a pre-digested embedding.</td></tr>
+            <tr><th>Architecture</th><td>SDXL: UNet &nbsp;·&nbsp; Flux / SD3 / Qwen / Z-Image: DiT. Architecture determines everything downstream — scheduler choice, LoRA compatibility, VAE pairing.</td></tr>
+            <tr><th>ComfyUI node</th><td>"Load Checkpoint" for SDXL (all-in-one). "Load Diffusion Model" for Flux, Qwen, Z-Image (diffusion model only — encoders and VAE are separate files).</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="comp-vae">VAE — Variational Autoencoder</h2>
+        <p>Compresses full-resolution images into a smaller latent representation for the diffusion model to work in — and decompresses them back to pixels at the end.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>Without a VAE, the diffusion model would need to work at full pixel resolution, which is prohibitively expensive. The VAE is a lossy compressor: it trades some information for massive speed and memory savings. VAE quality directly affects colour accuracy, sharpness, and fine detail.</td></tr>
+            <tr><th>Files by model</th><td>Flux.1: <code>ae.safetensors</code> &nbsp;·&nbsp; Flux.2: <code>flux2-vae.safetensors</code> &nbsp;·&nbsp; SDXL: <code>sdxl-vae-fp16-fix.safetensors</code> &nbsp;·&nbsp; Qwen-Image: its own separate VAE</td></tr>
+            <tr><th>Critical rule</th><td>VAEs are NOT interchangeable between model families. Modern models (Flux.2, Z-Image) use a 16-channel VAE vs the 4-channel VAE of SDXL — swapping them produces washed-out or distorted images immediately. Place all VAE files in <code>models/vae/</code>.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="comp-scheduler">Scheduler — Sampler Schedule</h2>
+        <p>Controls how noise is added and removed across the diffusion steps — the mathematical trajectory from pure noise to clean image. Not a neural network; it's an algorithm.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>Different schedulers produce different results at the same step count. Flow Matching models (Flux) use straight-line probability-space trajectories — fundamentally different math from DDPM. This is why DDPM schedulers (DPM++, Karras, DDIM) cannot be freely swapped onto Flux.</td></tr>
+            <tr><th>Common schedulers</th><td>DPM++ 2M Karras (SDXL quality, ~20 steps) &nbsp;·&nbsp; Euler / Euler a (SDXL fast) &nbsp;·&nbsp; Simple / SGM Uniform (Flux) &nbsp;·&nbsp; DPM++ 3S (Qwen-Image fast, ~10 steps)</td></tr>
+            <tr><th>Common mistake</th><td>Using DPM++ Karras or DDIM on a Flux model. Use Simple or SGM Uniform for Flux. Set inside the KSampler or SamplerCustomAdvanced node.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="comp-ksampler">KSampler — The Sampler Node</h2>
+        <p>The node that runs the denoising loop — calls the diffusion model N times, guided by the text embedding and scheduler, to produce the final clean latent.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>At each step, it asks the diffusion model "given this noisy latent and this prompt, what noise is here?" then uses the scheduler to take one denoising step. Also applies CFG: runs the model twice per step (conditioned + unconditional) and extrapolates toward the prompt. Flux models bake guidance in via distillation — CFG=1, one pass per step.</td></tr>
+            <tr><th>Key settings</th><td>Steps: 20–50 (standard), 4–8 (distilled) &nbsp;·&nbsp; CFG Scale: 7–9 (SDXL), 1.0 (Flux schnell), 3.5 (Flux dev) &nbsp;·&nbsp; Denoise: 1.0 = txt2img, &lt;1.0 = img2img</td></tr>
+            <tr><th>Notes</th><td>For Flux, use the FluxGuidance node instead of standard CFG. SamplerCustomAdvanced gives more control than basic KSampler. Seed controls the initial noise pattern.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="comp-clip-text-encode">CLIP Text Encode — Prompt Node</h2>
+        <p>Feeds your text prompt through the loaded text encoder and produces the conditioning embedding that guides the denoising process.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>Usually two nodes — one for positive prompt (what you want) and one for negative prompt (what you don't). Flux models use no negative prompt: guidance is baked into the weights via distillation, so there is no unconditional pass for CFG to push against.</td></tr>
+            <tr><th>By model</th><td>SDXL: two CLIP Text Encode nodes (positive + negative) &nbsp;·&nbsp; Flux.1/2: one CLIPTextEncodeFlux node with guidance parameter &nbsp;·&nbsp; Qwen-Image: one text encode node, negative optional</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="comp-vae-decode">VAE Decode — Output Node</h2>
+        <p>Takes the final clean latent from the KSampler and runs it through the VAE decoder to convert it back into a full-resolution pixel image.</p>
+        <table>
+          <tbody>
+            <tr><th>Variants</th><td>Standard VAE Decode for normal use. VAE Decode (Tiled) for very large images to avoid VRAM spikes during decoding. Latent upscale workflows: decode → upscale → re-encode → decode again.</td></tr>
+            <tr><th>Common mistake</th><td>If output images look washed out, too saturated, or soft, the first thing to check is whether you loaded the correct VAE. The fp16-fix VAE for SDXL is critical — the original baked VAE in many SDXL checkpoints produces washed colours.</td></tr>
+          </tbody>
+        </table>
+
+      </article>
+
+      <nav class="section-nav">
+        <a href="ai-image-models-reference.html">
+          <span class="section-nav__dir">← Index</span>
+          <span class="section-nav__title">AI Image Models: Reference</span>
+        </a>
+        <a href="ai-models-0b.html">
+          <span class="section-nav__dir">Next →</span>
+          <span class="section-nav__title">0b. Component Internals</span>
+        </a>
+      </nav>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-06</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

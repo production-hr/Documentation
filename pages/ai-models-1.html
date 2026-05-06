@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>1. Model Landscape — AI Image Models</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Reference</span>
+        <span>2026-05-06</span>
+        <span>4 min read</span>
+      </div>
+
+      <h1 class="doc-title">1. Model Landscape</h1>
+
+      <p class="doc-lede">
+        Core open-source image generation models in active use as of early 2026,
+        with architecture, VRAM requirements, and typical filenames.
+      </p>
+
+      <article class="prose">
+
+        <p>Core open-source image generation models in active use as of March 2026. API-only models included for comparison.</p>
+
+        <h2 id="model-sdxl">SDXL 1.0</h2>
+        <p>Legacy open-source standard. Native 1024px with a massive fine-tune ecosystem. Requires CFG and negative prompts — being replaced by DiT models but still widely used.</p>
+        <table>
+          <tbody>
+            <tr><th>Parameters</th><td>~3.5B</td></tr>
+            <tr><th>Architecture</th><td>UNet + CLIP</td></tr>
+            <tr><th>Precision</th><td>BF16 / FP16</td></tr>
+            <tr><th>VRAM</th><td>~6–8 GB</td></tr>
+            <tr><th>License</th><td>CreativeML Open RAIL+M — non-commercial by default</td></tr>
+            <tr><th>Filenames</th><td><code>dreamshaper-xl.safetensors</code> · <code>sdxl_base_1.0.safetensors</code></td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="model-flux1-dev">Flux.1 [dev]</h2>
+        <p>Open weights, non-commercial. Guidance-distilled from Flux.1 [pro]. Best detail of the open Flux.1 models and the standard base for LoRA training. Uses CLIP-L + T5-XXL text encoders.</p>
+        <table>
+          <tbody>
+            <tr><th>Parameters</th><td>12B</td></tr>
+            <tr><th>Architecture</th><td>DiT / Flow Matching</td></tr>
+            <tr><th>Precision</th><td>BF16 / FP8</td></tr>
+            <tr><th>VRAM</th><td>~16 GB (BF16) · ~8–9 GB (Q4 GGUF)</td></tr>
+            <tr><th>Steps</th><td>20–50</td></tr>
+            <tr><th>License</th><td>FLUX.1 [dev] Non-Commercial License</td></tr>
+            <tr><th>Filenames</th><td><code>flux1-dev.safetensors</code> · <code>flux1-dev-Q4_K_M.gguf</code></td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="model-flux1-schnell">Flux.1 [schnell]</h2>
+        <p>Apache 2.0 — full commercial use. Adversarial-distilled for 1–4 steps only. Best for rapid iteration and drafts. Slight quality drop vs dev; same T5+CLIP encoders.</p>
+        <table>
+          <tbody>
+            <tr><th>Parameters</th><td>12B</td></tr>
+            <tr><th>Architecture</th><td>DiT / Flow Matching</td></tr>
+            <tr><th>Precision</th><td>BF16 / FP8</td></tr>
+            <tr><th>VRAM</th><td>~16 GB (BF16) · ~8–9 GB (Q4 GGUF)</td></tr>
+            <tr><th>Steps</th><td>1–4</td></tr>
+            <tr><th>License</th><td>Apache 2.0</td></tr>
+            <tr><th>Filenames</th><td><code>flux1-schnell.safetensors</code> · <code>flux1-schnell-Q4_K_M.gguf</code></td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="model-flux11-pro">Flux 1.1 Pro (+ Ultra / Raw)</h2>
+        <p>Closed source, API only via BFL, fal.ai, and Replicate. Best Flux.1-generation quality. Ultra reaches up to 4MP; Raw produces hyper-realistic candid photography. ~4.5s per generation.</p>
+        <table>
+          <tbody>
+            <tr><th>Parameters</th><td>12B+</td></tr>
+            <tr><th>Architecture</th><td>DiT / Flow Matching</td></tr>
+            <tr><th>Precision</th><td>Cloud only — no local weights</td></tr>
+            <tr><th>VRAM</th><td>API only</td></tr>
+            <tr><th>License</th><td>Paid API</td></tr>
+            <tr><th>Access</th><td>bfl.ml · fal.ai · Replicate</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="model-flux1-kontext">Flux.1 Kontext [dev / pro / max]</h2>
+        <p>Released May 2025. In-context image editing — takes an image plus a text prompt and edits coherently. Dev = open weights non-commercial. Pro/Max = API only. Adobe Photoshop beta integration.</p>
+        <table>
+          <tbody>
+            <tr><th>Parameters</th><td>12B</td></tr>
+            <tr><th>Architecture</th><td>DiT / Flow Matching</td></tr>
+            <tr><th>Precision</th><td>BF16 / FP8 (dev)</td></tr>
+            <tr><th>VRAM</th><td>~16 GB (dev BF16)</td></tr>
+            <tr><th>License</th><td>Dev: non-commercial · Pro/Max: paid API</td></tr>
+            <tr><th>Filenames</th><td><code>flux1-kontext-dev.safetensors</code></td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="model-flux2-dev">Flux.2 [dev]</h2>
+        <p>Released Nov 2025. Non-commercial open weights. Mistral-3 24B LLM replaces T5 as the text encoder — massive prompt comprehension jump. Supports 32K-token prompts. Best open image model for complex scenes.</p>
+        <table>
+          <tbody>
+            <tr><th>Parameters</th><td>~32B</td></tr>
+            <tr><th>Architecture</th><td>DiT + Mistral-3 24B encoder</td></tr>
+            <tr><th>Precision</th><td>BF16 / FP8</td></tr>
+            <tr><th>VRAM</th><td>~32–40 GB (BF16) · ~16 GB (Q4 GGUF)</td></tr>
+            <tr><th>License</th><td>Non-commercial open weights</td></tr>
+            <tr><th>Filenames</th><td><code>flux2-dev.safetensors</code> · <code>flux2-dev-Q4_K_M.gguf</code></td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="model-flux2-klein">Flux.2 [klein]</h2>
+        <p>Apache 2.0 — fully free. "Klein" = small in German. Consumer GPU-friendly sibling of Flux.2 Dev with the same Mistral-3 LLM encoder advantage at lower VRAM cost.</p>
+        <table>
+          <tbody>
+            <tr><th>Parameters</th><td>Smaller than dev</td></tr>
+            <tr><th>Architecture</th><td>DiT + Mistral-3 encoder</td></tr>
+            <tr><th>Precision</th><td>BF16 / GGUF</td></tr>
+            <tr><th>VRAM</th><td>~8–12 GB (Q4 GGUF)</td></tr>
+            <tr><th>License</th><td>Apache 2.0</td></tr>
+            <tr><th>Filenames</th><td><code>flux2-klein.gguf</code> · <code>flux2-klein-Q4_K_M.gguf</code></td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="model-z-image">Z-Image Turbo</h2>
+        <p>Alibaba Tongyi Lab. Apache 2.0. Nov 2025. Photorealistic in under 3 seconds. Uses Qwen3-4B as an LLM text encoder. Best-in-class speed/quality ratio on consumer GPUs for its parameter count.</p>
+        <table>
+          <tbody>
+            <tr><th>Parameters</th><td>~6B</td></tr>
+            <tr><th>Architecture</th><td>S3-DiT (single-stream)</td></tr>
+            <tr><th>Precision</th><td>BF16 / FP8 / GGUF</td></tr>
+            <tr><th>VRAM</th><td>~16 GB (BF16) · ~8 GB (Q4)</td></tr>
+            <tr><th>License</th><td>Apache 2.0</td></tr>
+            <tr><th>Filenames</th><td><code>z-image-turbo.safetensors</code> · <code>z-image-turbo-fp8.safetensors</code></td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="model-qwen-image">Qwen-Image-2512</h2>
+        <p>Alibaba. Dec 2025 (2512 = year 25, month 12). Best-in-class bilingual text rendering. Exceptional prompt adherence — can be too literal; precise prompts produce exceptional results. Uses Qwen-VL vision-language model as the text encoder.</p>
+        <table>
+          <tbody>
+            <tr><th>Parameters</th><td>~20B</td></tr>
+            <tr><th>Architecture</th><td>DiT + Qwen-VL encoder</td></tr>
+            <tr><th>Precision</th><td>BF16 / FP8 / GGUF</td></tr>
+            <tr><th>VRAM</th><td>~40 GB (BF16) · ~21 GB (Q8 GGUF)</td></tr>
+            <tr><th>License</th><td>Apache 2.0</td></tr>
+            <tr><th>Filenames</th><td><code>qwen-image-2512-bf16.safetensors</code> · <code>qwen-image-2512-Q8.gguf</code></td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          Flux.1 Kontext added May 2025. Flux.2, Z-Image Turbo, and Qwen-Image-2512 all released Nov–Dec 2025. Qwen-Image-2512 ranked #1 open-source on AI Arena blind testing (Dec 2025).
+        </div>
+
+      </article>
+
+      <nav class="section-nav">
+        <a href="ai-models-0e.html">
+          <span class="section-nav__dir">← Previous</span>
+          <span class="section-nav__title">0e. Empty Latent Image Node</span>
+        </a>
+        <a href="ai-models-2.html">
+          <span class="section-nav__dir">Next →</span>
+          <span class="section-nav__title">2. Variant &amp; Suffix Labels</span>
+        </a>
+      </nav>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-06</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

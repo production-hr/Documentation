@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>7. Prompt Craft by Model — AI Image Models</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2020/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Reference</span>
+        <span>2026-05-06</span>
+        <span>6 min read</span>
+      </div>
+
+      <h1 class="doc-title">7. Prompt Craft by Model</h1>
+
+      <p class="doc-lede">
+        The text encoder determines prompt dialect — using SDXL-style keywords on
+        Flux produces mediocre results, and vice versa.
+      </p>
+
+      <article class="prose">
+
+        <p class="dropcap">
+          Each model family has a distinct prompt dialect tied to its encoder architecture.
+          SDXL's CLIP encoder was trained on image captions and responds to keyword tags.
+          Flux.1's T5-XXL encoder understands grammar and prose. Flux.2's Mistral-3 can
+          parse multi-clause narrative descriptions. Knowing which encoder you're talking
+          to is the difference between a prompt that works and one that underperforms.
+        </p>
+
+        <h2 id="keywords-vs-prose">Keywords vs. Natural Language</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Encoder Type</th>
+              <th>Prompt Style</th>
+              <th>Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>CLIP (SDXL)</strong></td>
+              <td>Short comma-separated keywords + quality tags</td>
+              <td>77-token hard limit. CLIP was trained on image captions, not prose. Understands visual keywords and style tokens better than grammar or relationships.</td>
+            </tr>
+            <tr>
+              <td><strong>T5-XXL (Flux.1)</strong></td>
+              <td>Full sentences, descriptive prose</td>
+              <td>512-token limit. T5 is a sequence-to-sequence language model that understands grammar, relationships, and negation. Long structured descriptions work properly.</td>
+            </tr>
+            <tr>
+              <td><strong>Mistral-3 24B (Flux.2)</strong></td>
+              <td>Complex multi-clause prose, narrative descriptions</td>
+              <td>32,000-token limit. A full LLM. Understands conditional statements, spatial relationships, story context, and nuanced instructions.</td>
+            </tr>
+            <tr>
+              <td><strong>Qwen3-4B (Z-Image)</strong></td>
+              <td>Natural language sentences, bilingual capable</td>
+              <td>LLM encoder. Handles long prompts well. Chinese and English both work natively without translation.</td>
+            </tr>
+            <tr>
+              <td><strong>Qwen-VL (Qwen-Image)</strong></td>
+              <td>Natural language with very precise literal adherence</td>
+              <td>Vision-language model encoder. Follows prompts almost too literally — vague prompts produce mediocre results, precise prompts produce exceptional ones.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="per-model-prompts">Per-Model Prompt Reference</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Negative Prompt?</th>
+              <th>Length Sweet Spot</th>
+              <th>Style Guide</th>
+              <th>Example Prompt</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>SDXL 1.0</strong></td>
+              <td>Yes — important for quality</td>
+              <td>50–150 tokens (short)</td>
+              <td>Comma-separated visual keywords. Quality boosters ("best quality", "masterpiece") are trained into SDXL checkpoints and meaningfully improve output. Style modifiers ("cinematic", "oil painting") work well. Avoid sentences with verbs — CLIP doesn't parse grammar reliably.</td>
+              <td><em>masterpiece, best quality, photorealistic portrait of a woman with auburn hair, cinematic lighting, shallow depth of field, sharp focus, 8K, artstation</em></td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 [dev]</strong></td>
+              <td>No — guidance baked in</td>
+              <td>100–300 tokens (medium)</td>
+              <td>Write as if describing a scene to a cinematographer. Full sentences with descriptive adjectives. Specify lighting, mood, and composition in plain English. Quality tags ("masterpiece", "8K") do nothing — they have no special meaning in T5.</td>
+              <td><em>A woman in her mid-thirties sits by a rain-streaked window in a Parisian café. Soft afternoon light filters through the condensation on the glass, casting diffuse shadows across her open notebook. Film grain, 35mm.</em></td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 [schnell]</strong></td>
+              <td>No</td>
+              <td>50–150 tokens (concise)</td>
+              <td>Same natural language style as Flux.1 dev, but shorter prompts work better due to fewer steps. Schnell has less capacity to resolve complex scene descriptions in 1–4 steps.</td>
+              <td><em>A neon-lit Tokyo street at 3am, rain-soaked pavement reflecting purple and pink signs, a lone cyclist in a yellow raincoat.</em></td>
+            </tr>
+            <tr>
+              <td><strong>Flux.2 [dev/klein]</strong></td>
+              <td>No</td>
+              <td>200–1000+ tokens (go long)</td>
+              <td>Use the full power of an LLM encoder. Multi-clause descriptions, conditional statements, spatial relationships, and narrative context all parse correctly. Writing a paragraph-length prompt genuinely improves output.</td>
+              <td><em>A Victorian-era scientist's study, late 19th century. Three gaslights illuminate mahogany shelves lined with brass instruments and leather volumes. On the central desk, a half-dissected mechanical automaton rests beside an open journal with hand-drawn anatomical sketches. Candlelight catches the gears. Muted greens and ambers. Photorealistic, 8K detail.</em></td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 Kontext [dev]</strong></td>
+              <td>No</td>
+              <td>50–200 tokens (edit-focused)</td>
+              <td>Prompts describe the edit to perform, not the full scene. Be specific about what changes and what stays the same. Reference elements from the input image explicitly.</td>
+              <td><em>Change the jacket to a red leather motorcycle jacket, keeping the person's face and pose identical. Background unchanged.</em></td>
+            </tr>
+            <tr>
+              <td><strong>Z-Image Turbo</strong></td>
+              <td>No</td>
+              <td>100–400 tokens</td>
+              <td>Natural language sentences. Qwen3-4B handles complex descriptions well. Chinese prompts work natively — no translation needed.</td>
+              <td><em>An elderly Japanese carpenter in his workshop, surrounded by wood shavings and hand tools hanging in perfect order. Warm window light. Photorealistic, detailed skin texture.</em></td>
+            </tr>
+            <tr>
+              <td><strong>Qwen-Image-2512</strong></td>
+              <td>Optional</td>
+              <td>150–500 tokens</td>
+              <td>Greatest strength and trap: follows prompts almost literally. Vague prompts produce average results; highly detailed prompts produce exceptional ones. Best-in-class for bilingual text rendering — specify Chinese characters in the prompt and they render correctly.</td>
+              <td><em>A glass of iced coffee on a white marble table, top-down view. Ice cubes partially melted. Thin condensation on the glass. Next to it, a small vase with two white flowers and a leather-bound notebook open to a blank page. Natural light from the left. Studio photography style.</em></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="universal-principles">Universal Prompt Principles</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Principle</th>
+              <th>Explanation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Lighting first</strong></td>
+              <td>Specifying light source, quality, and direction is one of the highest-leverage additions to any prompt. "Soft window light from the left", "golden hour backlight", "neon sign reflections" dramatically affect output across every model.</td>
+            </tr>
+            <tr>
+              <td><strong>Camera / lens language</strong></td>
+              <td>Focal length, aperture, and perspective terms work across all modern models. "35mm lens", "shallow depth of field", "wide angle distortion", "macro close-up" are understood because these terms appear pervasively in training data captions.</td>
+            </tr>
+            <tr>
+              <td><strong>Avoid SDXL quality tags on DiT models</strong></td>
+              <td>For Flux and Qwen models, tags like "masterpiece", "best quality", "highly detailed", "artstation" are noise, not signal. These tokens carry no special meaning in T5, Mistral-3, or Qwen encoders — they are SDXL-era CLIP vocabulary.</td>
+            </tr>
+            <tr>
+              <td><strong>Negative prompts: SDXL only</strong></td>
+              <td>Negative prompts work on SDXL via CFG. They do nothing on Flux, Z-Image, or Qwen-Image models because guidance is distilled into the weights — there is no unconditional pass for CFG to push against. For SDXL, a standard negative ("blurry, low quality, watermark, deformed hands") meaningfully improves output.</td>
+            </tr>
+            <tr>
+              <td><strong>Composition language</strong></td>
+              <td>Explicit composition instructions work well on modern DiT models. "Rule of thirds", "subject in the lower left", "negative space in the upper right", "symmetrical composition" are all correctly parsed by T5/LLM encoders.</td>
+            </tr>
+            <tr>
+              <td><strong>Iterative refinement</strong></td>
+              <td>Start with a concise core prompt, generate, then add detail to weak areas. Adding 20 words of specificity to a detail that came out wrong is more effective than writing a 400-word prompt from scratch.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          Token limits are maximums, not targets. Flux.1 dev produces excellent results at 100–150 tokens for most scenes. The advantage of Mistral-3 in Flux.2 is not that you need to write 32K tokens — it's that when your scene genuinely requires complex relational descriptions, the model can resolve them correctly rather than mangling the grammar.
+        </div>
+
+      </article>
+
+      <nav class="section-nav">
+        <a href="ai-models-6.html">
+          <span class="section-nav__dir">← Previous</span>
+          <span class="section-nav__title">6. Reading a Model Filename</span>
+        </a>
+        <a href="ai-image-models-reference.html">
+          <span class="section-nav__dir">↑ Index</span>
+          <span class="section-nav__title">AI Image Models: Reference</span>
+        </a>
+      </nav>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-06</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

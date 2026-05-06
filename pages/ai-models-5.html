@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>5. ComfyUI Folder Guide — AI Image Models</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Reference</span>
+        <span>2026-05-06</span>
+        <span>5 min read</span>
+      </div>
+
+      <h1 class="doc-title">5. ComfyUI Folder Guide</h1>
+
+      <p class="doc-lede">
+        ComfyUI scans specific subdirectories for each file type — wrong folder means
+        the model won't appear in dropdowns.
+      </p>
+
+      <article class="prose">
+
+        <p>ComfyUI scans specific subdirectories under <code>models/</code> for each file type. Wrong folder = model won't appear in dropdowns. The key split for modern models is: the diffusion model, the text encoder(s), and the VAE are all separate files in separate folders.</p>
+
+        <h2 id="folder-reference">Folder Reference</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Folder Path</th>
+              <th>What Goes Here</th>
+              <th>Why / Which Node Loads It</th>
+              <th>Filename Examples</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>models/checkpoints/</code></td>
+              <td>Full all-in-one model files</td>
+              <td>SDXL checkpoints, fine-tuned merged models. Contains UNet + CLIP + VAE baked together in one file. Loaded with "Load Checkpoint" node.</td>
+              <td><code>dreamshaper-xl.safetensors</code><br /><code>sdxl_base_1.0.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><code>models/diffusion_models/</code><br />(also: <code>models/unet/</code>)</td>
+              <td>Standalone diffusion model (DiT/UNet only)</td>
+              <td>Flux.1, Flux.2, SD3, Z-Image, Qwen-Image main model files — no encoders or VAE included. Loaded with "Load Diffusion Model" node. Both folder names are scanned; <code>diffusion_models/</code> is the current standard.</td>
+              <td><code>flux1-dev.safetensors</code><br /><code>flux2-dev-Q4_K_M.gguf</code><br /><code>z-image-turbo.safetensors</code><br /><code>qwen-image-2512-fp8.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><code>models/clip/</code><br />(also: <code>models/text_encoders/</code>)</td>
+              <td>Text encoder models</td>
+              <td>CLIP, T5-XXL, Mistral-3, Qwen3-4B, Qwen-VL — whichever text encoder the model uses. Flux.1 needs both CLIP-L and T5-XXL. Flux.2 needs Mistral-3. Loaded with "DualCLIPLoader" or "CLIPLoader". Both folder names scanned.</td>
+              <td><code>t5xxl_fp8_e4m3fn.safetensors</code><br /><code>clip_l.safetensors</code><br /><code>mistral_3_small_flux2_fp8.safetensors</code><br /><code>qwen2.5-vl-7b-instruct-q8.gguf</code></td>
+            </tr>
+            <tr>
+              <td><code>models/vae/</code></td>
+              <td>Variational Autoencoder</td>
+              <td>Always a separate file for modern models. Every model family needs its own VAE — they are NOT interchangeable. Loaded with "Load VAE" node.</td>
+              <td><code>ae.safetensors</code> (Flux.1)<br /><code>flux2-vae.safetensors</code> (Flux.2)<br /><code>vae-ft-mse-840000-ema-pruned.safetensors</code> (SDXL)</td>
+            </tr>
+            <tr>
+              <td><code>models/loras/</code></td>
+              <td>LoRA adapter files</td>
+              <td>Style/character/concept fine-tune adapters. Must match the base model architecture. Apply with "Load LoRA" node — does not replace the base model, stacks on top of it.</td>
+              <td><code>flux-realism-lora.safetensors</code><br /><code>sdxl-lightning-4step-lora.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><code>models/controlnet/</code></td>
+              <td>ControlNet models</td>
+              <td>Condition generation on depth, edges, pose, etc. Must match base model (SDXL ControlNet ≠ Flux ControlNet). Loaded with "Load ControlNet Model" node.</td>
+              <td><code>controlnet-depth-sdxl.safetensors</code><br /><code>xlabs-flux-depth-controlnet.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><code>models/upscale_models/</code></td>
+              <td>Image upscaling models</td>
+              <td>Post-processing upscalers like RealESRGAN, ESRGAN, 4xUltrasharp. Used after image generation to increase resolution. Loaded with "Load Upscale Model" node.</td>
+              <td><code>RealESRGAN_x4plus.pth</code><br /><code>4x-UltraSharp.pth</code></td>
+            </tr>
+            <tr>
+              <td><code>models/clip_vision/</code></td>
+              <td>CLIP Vision encoder</td>
+              <td>Image understanding encoder used by IP-Adapter, image-to-image conditioning, reference workflows. Different from text CLIP.</td>
+              <td><code>clip-vit-large-patch14.safetensors</code><br /><code>IP-Adapter-Plus-SDXL.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><code>models/ipadapter/</code></td>
+              <td>IP-Adapter models</td>
+              <td>Image Prompt Adapter — lets you use a reference image as a style/content guide alongside text prompts.</td>
+              <td><code>ip-adapter-plus_sdxl_vit-h.safetensors</code><br /><code>ip-adapter-flux.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><code>models/embeddings/</code></td>
+              <td>Textual Inversion embeddings</td>
+              <td>Very small files that teach the model a new token/concept. Mainly used with SD1.5/SDXL. Reference in prompt as <code>&lt;embedding_name&gt;</code>.</td>
+              <td><code>bad-hands-5.pt</code><br /><code>negative-hand-neg.pt</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          <code>models/unet/</code> and <code>models/diffusion_models/</code> are both scanned for the same file type — either works. Current convention is <code>diffusion_models/</code>. Similarly, <code>models/clip/</code> and <code>models/text_encoders/</code> both work for text encoders. GGUF diffusion models (<code>.gguf</code>) go in <code>models/unet/</code> and require the ComfyUI-GGUF custom node. Without it, GGUF files will not load.
+        </div>
+
+        <h2 id="per-model-placement">Per-Model File Placement</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Diffusion Model →</th>
+              <th>Text Encoder(s) →</th>
+              <th>VAE →</th>
+              <th>ComfyUI Node(s)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>SDXL (checkpoint)</strong></td>
+              <td><code>checkpoints/</code></td>
+              <td>(baked in)</td>
+              <td>(baked in)</td>
+              <td>Load Checkpoint</td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 dev/schnell</strong></td>
+              <td><code>diffusion_models/</code></td>
+              <td><code>clip/</code> (CLIP-L + T5-XXL)</td>
+              <td><code>vae/</code></td>
+              <td>Load Diffusion Model + DualCLIPLoader + Load VAE</td>
+            </tr>
+            <tr>
+              <td><strong>Flux.2 dev/klein</strong></td>
+              <td><code>diffusion_models/</code></td>
+              <td><code>text_encoders/</code> (Mistral-3)</td>
+              <td><code>vae/</code></td>
+              <td>Load Diffusion Model + CLIPLoader + Load VAE</td>
+            </tr>
+            <tr>
+              <td><strong>Z-Image Turbo</strong></td>
+              <td><code>diffusion_models/</code></td>
+              <td><code>text_encoders/</code> (Qwen3-4B)</td>
+              <td><code>vae/</code></td>
+              <td>Load Diffusion Model + CLIPLoader + Load VAE</td>
+            </tr>
+            <tr>
+              <td><strong>Qwen-Image-2512</strong></td>
+              <td><code>diffusion_models/</code></td>
+              <td><code>text_encoders/</code> (Qwen-VL)</td>
+              <td><code>vae/</code></td>
+              <td>Load Diffusion Model + CLIPLoader + Load VAE</td>
+            </tr>
+            <tr>
+              <td><strong>Flux.1 Kontext [dev]</strong></td>
+              <td><code>diffusion_models/</code></td>
+              <td><code>clip/</code> (CLIP-L + T5-XXL)</td>
+              <td><code>vae/</code></td>
+              <td>Load Diffusion Model + DualCLIPLoader + Load VAE</td>
+            </tr>
+            <tr>
+              <td><strong>Any GGUF model</strong></td>
+              <td><code>unet/</code> ← use this for <code>.gguf</code></td>
+              <td><code>clip/</code> (GGUF or safetensors)</td>
+              <td><code>vae/</code> (<code>.safetensors</code>)</td>
+              <td>Unet Loader (GGUF) — requires ComfyUI-GGUF custom node</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          SDXL checkpoints contain all three components in one file, so they use the simpler "Load Checkpoint" node. All modern DiT models (Flux, Qwen, Z-Image) split components into separate files requiring separate loaders.
+        </div>
+
+      </article>
+
+      <nav class="section-nav">
+        <a href="ai-models-4.html">
+          <span class="section-nav__dir">← Previous</span>
+          <span class="section-nav__title">4. Architecture Types</span>
+        </a>
+        <a href="ai-models-6.html">
+          <span class="section-nav__dir">Next →</span>
+          <span class="section-nav__title">6. Reading a Model Filename</span>
+        </a>
+      </nav>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-06</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

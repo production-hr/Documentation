@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>4. Architecture Types — AI Image Models</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Reference</span>
+        <span>2026-05-06</span>
+        <span>3 min read</span>
+      </div>
+
+      <h1 class="doc-title">4. Architecture Types</h1>
+
+      <p class="doc-lede">
+        The underlying architecture determines capability ceiling, ecosystem
+        compatibility, and which quantisation formats work.
+      </p>
+
+      <article class="prose">
+
+        <table>
+          <thead>
+            <tr>
+              <th>Architecture</th>
+              <th>Used In</th>
+              <th>How It Works / Key Trait</th>
+              <th>Examples</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>UNet</strong></td>
+              <td>SDXL, SD1.5, SD2.x</td>
+              <td>Encoder-decoder with skip connections. Mature, massive community fine-tune ecosystem. Conv2d layers make GGUF quantisation impractical — use FP16/BF16 safetensors.</td>
+              <td><code>sdxl_base_1.0.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><strong>DiT</strong><br />(Diffusion Transformer)</td>
+              <td>Flux.1/2, SD3, Qwen-Image, Z-Image</td>
+              <td>Pure transformer architecture replacing UNet. Scales better with parameters, superior text following, more robust to quantisation. No skip connections.</td>
+              <td>All Flux models, SD3</td>
+            </tr>
+            <tr>
+              <td><strong>Flow Matching</strong></td>
+              <td>Flux family, SD3</td>
+              <td>Training/sampling method: learns direct flow paths from noise to image rather than iterative DDPM noise removal. Enables fewer inference steps.</td>
+              <td>Flux.1, Flux.2, Flux.1 Kontext</td>
+            </tr>
+            <tr>
+              <td><strong>S3-DiT</strong><br />(Single-Stream DiT)</td>
+              <td>Z-Image, Z-Image Turbo</td>
+              <td>Text and image tokens processed as one unified sequence (not dual-stream like Flux). Enables smaller, faster models without separate cross-attention branches.</td>
+              <td>Z-Image, Z-Image Turbo</td>
+            </tr>
+            <tr>
+              <td><strong>LLM Text Encoder</strong></td>
+              <td>Flux.2, Z-Image, Qwen-Image</td>
+              <td>Uses a large language model as text encoder instead of CLIP/T5. Flux.2: Mistral-3 24B. Z-Image: Qwen3-4B. Qwen-Image: Qwen-VL. Massive improvement in complex prompt understanding.</td>
+              <td>Flux.2 Dev/Klein, Z-Image, Qwen-Image-2512</td>
+            </tr>
+            <tr>
+              <td><strong>VAE</strong><br />(Variational Autoencoder)</td>
+              <td>All models</td>
+              <td>Compresses pixel images to/from latent space. Separate swappable component. Quality affects colour accuracy, sharpness, and fine detail. Each model family has its own VAE.</td>
+              <td><code>ae.safetensors</code> (Flux.1), <code>flux2-vae.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><strong>ControlNet</strong></td>
+              <td>SDXL, Flux (via adapters)</td>
+              <td>Add-on model that conditions generation on depth maps, edge maps, pose skeletons, etc. Must match base model architecture.</td>
+              <td><code>controlnet-depth-sdxl.safetensors</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+      </article>
+
+      <nav class="section-nav">
+        <a href="ai-models-3.html">
+          <span class="section-nav__dir">← Previous</span>
+          <span class="section-nav__title">3. Precision &amp; Quantisation</span>
+        </a>
+        <a href="ai-models-5.html">
+          <span class="section-nav__dir">Next →</span>
+          <span class="section-nav__title">5. ComfyUI Folder Guide</span>
+        </a>
+      </nav>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-06</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>6. Reading a Model Filename — AI Image Models</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Reference</span>
+        <span>2026-05-06</span>
+        <span>2 min read</span>
+      </div>
+
+      <h1 class="doc-title">6. Reading a Model Filename</h1>
+
+      <p class="doc-lede">
+        Two annotated examples showing how to decode the naming conventions
+        used by Flux, Qwen, and GGUF model files.
+      </p>
+
+      <article class="prose">
+
+        <h2 id="filename-decode">Example A: <code>flux2-dev-Q4_K_M.gguf</code></h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Part</th>
+              <th>Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>flux2-dev</code></td>
+              <td>Model family + variant: Flux version 2, [dev] (open weights, non-commercial, ~32B)</td>
+            </tr>
+            <tr>
+              <td><code>Q4_K_M</code></td>
+              <td>4-bit quantisation, K-quant method, Medium variant</td>
+            </tr>
+            <tr>
+              <td><code>.gguf</code></td>
+              <td>File format — loads via Unet Loader (GGUF) node, place in <code>models/unet/</code> or <code>models/diffusion_models/</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>Text encoder needed: Mistral-3 small → <code>models/text_encoders/</code> &nbsp;|&nbsp; VAE: <code>flux2-vae.safetensors</code> → <code>models/vae/</code></p>
+
+        <h2 id="filename-decode-b">Example B: <code>qwen-image-2512-fp8.safetensors</code></h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Part</th>
+              <th>Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>qwen-image</code></td>
+              <td>Qwen-Image model family (Alibaba Tongyi)</td>
+            </tr>
+            <tr>
+              <td><code>2512</code></td>
+              <td>Date code: year 25, month 12 → December 2025 revision</td>
+            </tr>
+            <tr>
+              <td><code>fp8</code></td>
+              <td>8-bit float quantisation — ~20 GB, near-BF16 quality</td>
+            </tr>
+            <tr>
+              <td><code>.safetensors</code></td>
+              <td>Safe format, memory-mapped. Place in <code>models/diffusion_models/</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>Text encoder needed: Qwen-VL encoder → <code>models/text_encoders/</code> &nbsp;|&nbsp; VAE → <code>models/vae/</code></p>
+
+      </article>
+
+      <nav class="section-nav">
+        <a href="ai-models-5.html">
+          <span class="section-nav__dir">← Previous</span>
+          <span class="section-nav__title">5. ComfyUI Folder Guide</span>
+        </a>
+        <a href="ai-models-7.html">
+          <span class="section-nav__dir">Next →</span>
+          <span class="section-nav__title">7. Prompt Craft by Model</span>
+        </a>
+      </nav>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-06</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

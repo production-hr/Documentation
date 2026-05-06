@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Character Pipeline (Mermaid) — Archive</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+  <style>
+    .diagram-wrap {
+      overflow-x: auto;
+      margin: 2rem 0;
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      background: var(--paper-deep);
+      padding: 1.5rem;
+    }
+    .mermaid {
+      min-width: 900px;
+    }
+    /* Force mermaid SVG to fill its container */
+    .mermaid svg {
+      width: 100% !important;
+      height: auto !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Reference</span>
+        <span>2026-05-05</span>
+        <span>Diagram</span>
+      </div>
+
+      <h1 class="doc-title">AI Character Pipeline — Mermaid</h1>
+
+      <p class="doc-lede">The full character pipeline rendered by Mermaid.js — the entire diagram is defined in ~40 lines of readable text syntax.</p>
+
+      <article class="prose">
+
+        <p class="dropcap">Mermaid compiles a plain-text description into an SVG at runtime. The source is human-readable, version-controllable, and easy to edit: adding a node means writing one line, not repositioning a dozen coordinates. The cost is a CDN dependency and some loss of layout control — Mermaid's auto-router decides connector paths and group positions.</p>
+
+        <div class="diagram-wrap">
+          <div class="mermaid">
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#B8CDD8",
+    "primaryTextColor": "#1A2A3A",
+    "primaryBorderColor": "#7A94A8",
+    "lineColor": "#4A6070",
+    "secondaryColor": "#7A94A8",
+    "tertiaryColor": "#C8D9E5",
+    "background": "#F4F5F9",
+    "mainBkg": "#B8CDD8",
+    "nodeBorder": "#7A94A8",
+    "clusterBkg": "#C8D9E5",
+    "clusterBorder": "#7A94A8",
+    "edgeLabelBackground": "#F4F5F9",
+    "titleColor": "#15172B",
+    "fontFamily": "Inter Tight, -apple-system, BlinkMacSystemFont, sans-serif",
+    "fontSize": "12px"
+  }
+}}%%
+graph LR
+    CHARACTER["<b>CHARACTER</b><br/>Define AGE, LOOK,<br/>ERA, STYLE"]
+
+    subgraph RAW["RAW REFERENCE COLLECTION"]
+        CFR["CHARACTER FACIAL<br/>REFERENCES"]
+        CE["CHARACTER<br/>EXPRESSIONS"]
+        CBR["CHARACTER BODY<br/>REFERENCES"]
+        CPR["CHARACTER PERFORMANCE<br/>REFERENCES"]
+    end
+
+    subgraph CSGW["CHARACTER SHEET GENERATION WORKFLOW"]
+        FFE["FACIAL FEATURE EXTRACTION"]
+        BPA["BODY PROPORTION ANALYSIS"]
+        SCC["STYLE CONSISTENCY CLEANUP"]
+        RAA["REVIEW AND APPROVAL"]
+    end
+
+    subgraph PG["PROMPT GENERATION"]
+        PEW["PROMPT EXTRACTOR WORKFLOW"]
+        MCP["MANUAL CURATED PROMPTS"]
+        SCSP["STANDARD CAMERA SHOT PROMPTS"]
+    end
+
+    subgraph MMD["MASTER MODEL DEFINITION"]
+        FMS["FACE MODEL SHEET"]
+        BMS["BODY MODEL SHEET"]
+        WP["WARDROBE / PROPS"]
+        HS["HAIRSTYLES"]
+    end
+
+    subgraph CPD["CHARACTER PROMPTS DATABASE"]
+        DPP["DETAILED PERFORMANCE PROMPTS"]
+        PP["PHOTOSHOOT PROMPTS"]
+        LC["LIGHTING CONDITIONS"]
+        CS["CAMERA SHOTS"]
+        CEX["CHARACTER EXPRESSIONS"]
+    end
+
+    HQGW(["HQ IMAGE GENERATION WORKFLOW"])
+
+    subgraph HIC["HQ IMAGE COLLECTIONS"]
+        TD["TRAINING DATA"]
+        SF["STARTING FRAMES"]
+        SI["STATIC IMAGES"]
+    end
+
+    subgraph DFL["DeepFaceLab Model"]
+        FS["FACE SNAP"]
+    end
+
+    subgraph LORAS["LoRAs"]
+        IL["IMAGE LORA:<br/>FLUX · Z-IMAGE"]
+        VL["VIDEO LORA:<br/>WAN 2.1 · WAN ANIMATE<br/>STEADY DANCER SVK.2"]
+    end
+
+    subgraph VID["Videos"]
+        VTV["VIDEO TO VIDEO"]
+        LS["LIPSYNC"]
+        PRO["PROMPTED"]
+        IC["INTERACTIVE CHARACTERS"]
+    end
+
+    subgraph IMG["Images"]
+        PR["PRINTS"]
+        DK["DECK"]
+        PM["PROMO MATERIAL"]
+    end
+
+    CHARACTER --> RAW
+    RAW --> CSGW
+    RAW --> PG
+    CSGW --> MMD
+    PG --> CPD
+    MMD --> HQGW
+    CPD --> HQGW
+    HQGW --> HIC
+    HIC --> DFL
+    HIC --> LORAS
+    HIC --> VID
+    HIC --> IMG
+
+    style WP fill:#D4BE82,stroke:#B09040
+    style HS fill:#D4BE82,stroke:#B09040
+    style HQGW fill:#7A94A8,color:#ffffff,stroke:#5A7480
+          </div>
+        </div>
+
+        <h2 id="source">The source</h2>
+        <p>The entire diagram above is generated from this text block. <code>graph LR</code> sets left-to-right flow. <code>subgraph</code> creates the grouped boxes. Individual nodes use <code>[]</code> for rectangles and <code>([])</code> for stadium shapes. Edges are <code>--&gt;</code>. The <code>style</code> lines at the end override colours for specific nodes.</p>
+
+        <pre><code>graph LR
+    CHARACTER["CHARACTER\nDefine AGE, LOOK, ERA, STYLE"]
+
+    subgraph RAW["RAW REFERENCE COLLECTION"]
+        CFR["CHARACTER FACIAL REFERENCES"]
+        ...
+    end
+
+    CHARACTER --> RAW
+    RAW --> CSGW
+    ...</code></pre>
+
+        <h2 id="tradeoffs">Tradeoffs</h2>
+        <p>Mermaid is the most maintainable option for a diagram that will evolve. The syntax is readable without tooling, diffs cleanly in git, and the renderer handles layout automatically. The downsides: you cannot precisely control connector routing, the CDN script adds a network request, and complex subgraph layouts sometimes produce unexpected results that require workarounds.</p>
+
+        <div class="callout callout--warn">
+          <strong>Dependency note:</strong> This page loads Mermaid from <code>cdn.jsdelivr.net</code>. If that CDN is unavailable the diagram will not render. For a production deployment, bundle <code>mermaid.min.js</code> locally alongside <code>site.js</code>.
+        </div>
+
+        <h2 id="see-also">See also</h2>
+        <ul>
+          <li><a href="pipeline-svg.html">SVG version</a> — inline SVG, pixel-perfect, zero dependencies</li>
+          <li><a href="pipeline-css.html">CSS version</a> — pure HTML and CSS, no SVG and no scripts</li>
+        </ul>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-05</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ startOnLoad: true });
+  </script>
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

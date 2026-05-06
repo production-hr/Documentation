@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>2. Variant &amp; Suffix Labels — AI Image Models</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Reference</span>
+        <span>2026-05-06</span>
+        <span>3 min read</span>
+      </div>
+
+      <h1 class="doc-title">2. Variant &amp; Suffix Labels</h1>
+
+      <p class="doc-lede">
+        Suffix labels decode a model's training strategy, speed tier,
+        commercial license, and intended use.
+      </p>
+
+      <article class="prose">
+
+        <p>These suffixes describe training strategy, speed characteristics, and commercial usage rights.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>What It Means</th>
+              <th>Practical Implication</th>
+              <th>Example Models</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>[dev]</strong></td>
+              <td>Open weights, non-commercial</td>
+              <td>Use for research, fine-tuning, LoRA training. Outputs not for commercial use without purchasing a commercial license from the developer.</td>
+              <td>Flux.1 [dev], Flux.2 [dev], Flux.1 Kontext [dev]</td>
+            </tr>
+            <tr>
+              <td><strong>[schnell]</strong></td>
+              <td>Speed-distilled — German for "fast"</td>
+              <td>Fewer steps, Apache 2.0 free commercial use. Best for rapid iteration, demos, real-time. Slight quality trade-off.</td>
+              <td>Flux.1 [schnell]</td>
+            </tr>
+            <tr>
+              <td><strong>[klein]</strong></td>
+              <td>Smaller/efficient — German for "small"</td>
+              <td>Consumer-GPU-friendly version. Apache 2.0. Same architecture as dev sibling, lower VRAM requirement.</td>
+              <td>Flux.2 [klein]</td>
+            </tr>
+            <tr>
+              <td><strong>[pro]</strong></td>
+              <td>Closed-source, API only</td>
+              <td>Top quality tier. No local weights. Paid-per-image API. Best for production where quality outweighs cost.</td>
+              <td>Flux.1 [pro], Flux 1.1 Pro, Flux.1 Kontext [pro/max]</td>
+            </tr>
+            <tr>
+              <td><strong>Ultra / Raw</strong></td>
+              <td>Resolution / style modes (Pro only)</td>
+              <td>Ultra = up to 4MP without speed penalty. Raw = hyper-realistic candid photography with authentic imperfections.</td>
+              <td>Flux 1.1 Pro Ultra, Pro Raw</td>
+            </tr>
+            <tr>
+              <td><strong>Turbo</strong></td>
+              <td>Aggressive step distillation</td>
+              <td>4–8 inference steps instead of 20–50. Near-instant generation. Some quality softening on fine detail.</td>
+              <td>Z-Image Turbo, SDXL-Turbo</td>
+            </tr>
+            <tr>
+              <td><strong>Lightning</strong></td>
+              <td>Even faster distillation (community)</td>
+              <td>1–4 steps. Community-distilled versions of existing models. More quality loss than Turbo.</td>
+              <td>SDXL Lightning, Qwen-Image-Lightning</td>
+            </tr>
+            <tr>
+              <td><strong>Kontext</strong></td>
+              <td>In-context image editing</td>
+              <td>Takes existing image + text prompt, edits coherently. Different from pure T2I. Released May 2025.</td>
+              <td>Flux.1 Kontext [dev/pro/max]</td>
+            </tr>
+            <tr>
+              <td><strong>Edit / Fill</strong></td>
+              <td>Targeted image editing variant</td>
+              <td>Trained for object replacement, inpainting, style transfer. Needs edit-specific workflow nodes.</td>
+              <td>Qwen-Image-Edit-2511, Flux.1 Fill</td>
+            </tr>
+            <tr>
+              <td><strong>LoRA</strong></td>
+              <td>Lightweight fine-tune adapter</td>
+              <td>Small file (10–300 MB) stacked on top of a base model. Changes style, adds characters/concepts.</td>
+              <td><code>flux-realism-lora.safetensors</code></td>
+            </tr>
+            <tr>
+              <td><strong>Checkpoint</strong></td>
+              <td>Full fine-tuned model</td>
+              <td>Complete baked weights with style/subject merged in. Larger (~5–25 GB). Loaded as a checkpoint.</td>
+              <td><code>dreamshaper-xl.safetensors</code>, JibMix-QI</td>
+            </tr>
+          </tbody>
+        </table>
+
+      </article>
+
+      <nav class="section-nav">
+        <a href="ai-models-1.html">
+          <span class="section-nav__dir">← Previous</span>
+          <span class="section-nav__title">1. Model Landscape</span>
+        </a>
+        <a href="ai-models-3.html">
+          <span class="section-nav__dir">Next →</span>
+          <span class="section-nav__title">3. Precision &amp; Quantisation</span>
+        </a>
+      </nav>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-06</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

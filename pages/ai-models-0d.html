@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>0d. Generation Modes — AI Image Models</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Reference</span>
+        <span>2026-05-06</span>
+        <span>7 min read</span>
+      </div>
+
+      <h1 class="doc-title">0d. Generation Modes</h1>
+
+      <p class="doc-lede">
+        All generation modes share the same core pipeline — what changes is the starting
+        noise, whether a mask applies, and how additional conditioning is injected.
+      </p>
+
+      <article class="prose">
+
+        <p class="dropcap">
+          The denoise parameter is the single knob that unifies all generation modes.
+          txt2img starts at denoise=1.0 (pure noise); img2img starts lower (partial noise
+          on an existing image); inpainting masks the region that receives noise; ControlNet
+          adds structural conditioning alongside the text. Understanding denoise makes every
+          mode predictable.
+        </p>
+
+        <h2 id="mode-txt2img">Text to Image (txt2img)</h2>
+        <p>Generate an image from a text prompt alone. The KSampler starts from pure random noise (denoise = 1.0) and denoises it fully, guided only by the prompt conditioning.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>The latent is initialised with random Gaussian noise seeded by your seed value. The diffusion model runs the full N steps from t=T (maximum noise) down to t=0 (clean). Changing the seed changes which region of the model's learned distribution you sample from.</td></tr>
+            <tr><th>Key settings</th><td>Denoise = 1.0 &nbsp;·&nbsp; Steps: 20–50 standard, 4–8 distilled &nbsp;·&nbsp; No negative prompt on Flux — guidance is baked in. SDXL benefits significantly from a standard negative prompt.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="mode-img2img">Image to Image (img2img)</h2>
+        <p>Take an existing image as a starting point and regenerate it with modifications guided by a text prompt. The input image is VAE-encoded into a latent and partially noised instead of starting from pure noise.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>The input image is VAE-encoded to a clean latent. Noise is added up to timestep t = T × denoise (not the full T). At denoise=0.5, you add 50% of maximum noise — the model keeps roughly half the original structure. At denoise=0.9, almost everything is replaced. The prompt then steers what the model reconstructs.</td></tr>
+            <tr><th>Key settings</th><td>Denoise: 0.3–0.9 typical &nbsp;·&nbsp; Low denoise preserves structure &nbsp;·&nbsp; High denoise = more creative freedom &nbsp;·&nbsp; See the Denoise Continuum section below for the full breakdown.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="mode-inpainting">Inpainting</h2>
+        <p>Regenerate only a selected region of an image while leaving the rest untouched. A mask defines which pixels are regenerated (white) and which are preserved (black).</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>The image is VAE-encoded to a latent. The mask is downsampled to latent resolution (8× smaller). Only the masked latent region receives noise — the unmasked region is held fixed. The model must generate content coherent with the preserved surroundings. Flux.1 Fill is BFL's official dedicated inpainting model.</td></tr>
+            <tr><th>Common mistake</th><td>Artefacts at mask edges usually come from poor mask feathering or too small a context region. Make the mask slightly larger than the object to replace so the model has edge context.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="mode-outpainting">Outpainting (Uncrop)</h2>
+        <p>Extend an image beyond its original borders. The existing image is placed on a larger canvas and the empty border region is inpainted by the model.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>Mechanically identical to inpainting — the original image occupies part of the canvas and the empty region is the mask. The model must extend scene geometry, lighting, and style without any pixel information in the extension region. Flux.1 Fill and Kontext are significantly better at outpainting than base models because they were trained on this task.</td></tr>
+            <tr><th>Tips</th><td>Use a prompt describing the full extended scene, not just the addition. Overlap the mask slightly into the original image (5–10%) to give the model context for blending.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="mode-variation">Image Variation (Redux / Style Transfer)</h2>
+        <p>Generate a new image that preserves the style or content of a reference image without directly copying it. Uses CLIP Vision or IP-Adapter to extract visual features from the reference.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>The reference is passed through a CLIP Vision encoder to extract semantic/stylistic feature vectors — not the VAE (which preserves pixel content). These vectors are injected as additional conditioning alongside the text prompt. The model generates from noise as in txt2img, with soft visual guidance from the reference. Flux.1 Redux uses this approach; IP-Adapter is the SDXL-era equivalent.</td></tr>
+            <tr><th>Key settings</th><td>Denoise = 1.0 (starts from noise) &nbsp;·&nbsp; Reference strength 0.0–1.0 &nbsp;·&nbsp; Unlike img2img, does NOT preserve composition — extracts abstract visual qualities. Good for style consistency across a batch.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="mode-multi-image">Multi-Image Input (Kontext / Reference)</h2>
+        <p>Provide multiple reference images simultaneously — the model edits, combines, or uses them for consistency. Architecturally distinct from IP-Adapter: the model reads and reasons about image content, not just style vectors.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>Flux.1 Kontext and Qwen-Image-Edit encode reference images as visual tokens and concatenate them with the text conditioning. The model attends to all of them in self-attention, understanding relationships between images ("keep this face", "use this background"). IP-Adapter extracts abstract features; Kontext directly processes image content.</td></tr>
+            <tr><th>Use cases</th><td>Character consistency, product photography, style-locked image series. Models: Flux.1 Kontext, Qwen-Image-Edit (1–10 input images). Prompt must explicitly reference what to do with each image.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="mode-controlnet">ControlNet (Guided Generation)</h2>
+        <p>Condition generation on a structural guide image — depth map, edge map, pose skeleton, line art, etc. The output structure is locked to the guide regardless of prompt creativity.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>ControlNet adds extra input channels to specific layers of the diffusion model. The guide image is processed by a separate small encoder and injected as residual additions into the UNet/DiT during denoising. Multiple ControlNets can be stacked with individual strength weights. For Flux, XLabs provides adapters (Depth, Canny, etc.).</td></tr>
+            <tr><th>Key settings</th><td>Strength: 1.0 = strong structural adherence, 0.3–0.5 = loose guidance &nbsp;·&nbsp; Guide types: Depth, Canny, Pose, Lineart, Normal, Scribble &nbsp;·&nbsp; Stacking Depth + Pose gives full body and spatial control simultaneously.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="mode-upscale">Upscaling Workflows (Hi-Res Fix / Latent Upscale)</h2>
+        <p>Generate at a lower resolution, upscale the result, then run img2img at partial denoise to add high-frequency detail at the larger size.</p>
+        <table>
+          <tbody>
+            <tr><th>How it works</th><td>Generating at 2048px directly is expensive and risks artefacts. Standard workflow: generate at 1024px → upscale to 2048px (bicubic, RealESRGAN, or latent upscale) → img2img at denoise 0.35–0.6. "Latent upscale" skips the VAE decode/encode cycle — the latent is upsampled directly, then denoised again. Faster and avoids VAE reconstruction artefacts.</td></tr>
+            <tr><th>Key settings</th><td>Pass 1: denoise 1.0 at native resolution &nbsp;·&nbsp; Pass 2: denoise 0.4–0.55 sweet spot &nbsp;·&nbsp; &gt;0.7 = model ignores upscale and regenerates freely &nbsp;·&nbsp; &lt;0.25 = no detail added &nbsp;·&nbsp; Upscalers: <code>RealESRGAN_x4plus.pth</code>, <code>4x-UltraSharp.pth</code></td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="denoise">The Denoise Continuum</h2>
+
+        <p>Denoise controls what timestep the KSampler starts from — and therefore how much of the original image can survive. It is the single most important parameter to understand in img2img, inpainting, and upscaling workflows.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Denoise Value</th>
+              <th>Perceived Effect</th>
+              <th>What's Happening</th>
+              <th>When to Use</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>0.0</strong></td>
+              <td>No change</td>
+              <td>No noise added. The KSampler runs zero steps. Output = input through VAE encode → decode only.</td>
+              <td>Effectively a VAE round-trip. Useful only for testing VAE quality.</td>
+            </tr>
+            <tr>
+              <td><strong>0.1 – 0.2</strong></td>
+              <td>Micro-refinement</td>
+              <td>Extremely subtle texture and sharpness adjustments. Composition and content completely preserved.</td>
+              <td>Slight texture improvements or reducing digital smoothness. Prompt has almost no effect.</td>
+            </tr>
+            <tr>
+              <td><strong>0.3 – 0.45</strong></td>
+              <td>Stylistic adjustment</td>
+              <td>Structure and composition preserved. Colours, texture, and surface qualities shift noticeably.</td>
+              <td>Sweet spot for Hi-Res Fix pass 2. Prompt starts to influence the aesthetic.</td>
+            </tr>
+            <tr>
+              <td><strong>0.5 – 0.65</strong></td>
+              <td>Moderate reimagining</td>
+              <td>General composition preserved; significant content changes possible. Lighting, style, fine details all shift.</td>
+              <td>img2img creative variations. The model "remembers" the layout but rewrites the details.</td>
+            </tr>
+            <tr>
+              <td><strong>0.7 – 0.8</strong></td>
+              <td>Heavy reinterpretation</td>
+              <td>Only the broadest structural suggestions survive. Most content is regenerated from the prompt.</td>
+              <td>Loose inspiration from a reference rather than preservation.</td>
+            </tr>
+            <tr>
+              <td><strong>0.9 – 0.95</strong></td>
+              <td>Near-full regeneration</td>
+              <td>Almost nothing from the original is preserved. Essentially txt2img with a weak initial bias.</td>
+              <td>Rarely useful — at this range, txt2img with a more detailed prompt is more predictable.</td>
+            </tr>
+            <tr>
+              <td><strong>1.0</strong></td>
+              <td>Full txt2img</td>
+              <td>Pure random noise. No input image influence. The input image (if any) is entirely ignored.</td>
+              <td>Standard txt2img mode. The seed controls the initial noise pattern.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout--note">
+          The same denoise value produces different levels of change depending on the model, scheduler, step count, and CFG scale. These ranges are guidelines for standard SDXL/Flux workflows at 20+ steps. Distilled models (Flux schnell, Z-Image Turbo) with 4–8 steps behave differently — a denoise of 0.5 at 4 steps is not equivalent to 0.5 at 30 steps.
+        </div>
+
+      </article>
+
+      <nav class="section-nav">
+        <a href="ai-models-0c.html">
+          <span class="section-nav__dir">← Previous</span>
+          <span class="section-nav__title">0c. Compatibility &amp; Resolution</span>
+        </a>
+        <a href="ai-models-0e.html">
+          <span class="section-nav__dir">Next →</span>
+          <span class="section-nav__title">0e. Empty Latent Image Node</span>
+        </a>
+      </nav>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-06</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>

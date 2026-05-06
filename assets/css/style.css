@@ -415,6 +415,49 @@ h1.doc-title {
   font-size: inherit;
 }
 
+/* --- Table of Contents --- */
+.toc {
+  border: 1px solid var(--rule);
+  background: var(--paper-deep);
+  border-radius: 4px;
+  padding: 1.25rem 1.5rem 1rem;
+  margin: 2rem 0 2.5rem;
+}
+.toc__label {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--ink-faint);
+  margin-bottom: 0.75rem !important;
+}
+.toc ol {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+.toc ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.2rem 0 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.5rem;
+}
+.toc > ol > li {
+  font-weight: 500;
+  font-size: 0.9rem;
+  margin-bottom: 0.35rem;
+}
+.toc ul li {
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+  margin-bottom: 0;
+}
+.toc ul li::before { content: "↳ "; color: var(--ink-faint); }
+.toc a { text-decoration: none; color: inherit; }
+.toc a:hover { color: var(--accent); background: none; }
+
 /* --- Tables --- */
 .prose table {
   width: 100%;
@@ -474,6 +517,35 @@ h1.doc-title {
   background: var(--note-soft);
 }
 .callout--note .callout__label { color: var(--note); }
+
+/* --- Section prev/next nav --- */
+.section-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  gap: 1rem;
+}
+.section-nav a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-decoration: none;
+  color: var(--ink-soft);
+  max-width: 48%;
+  transition: color 0.15s;
+}
+.section-nav a:hover { color: var(--ink); background: none; }
+.section-nav__dir {
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.section-nav__title { font-size: 0.9rem; font-weight: 500; }
+.section-nav a:last-child { text-align: right; margin-left: auto; }
 
 /* --- Footer --- */
 .doc-footer {

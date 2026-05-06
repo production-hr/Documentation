@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>0e. Empty Latent Image Node — AI Image Models</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Reference</span>
+        <span>2026-05-06</span>
+        <span>2 min read</span>
+      </div>
+
+      <h1 class="doc-title">0e. The Empty Latent Image Node</h1>
+
+      <p class="doc-lede">
+        What the Empty Latent Image node actually creates, why it exists, and how
+        Width × Height settings translate into the tensor the diffusion model works with.
+      </p>
+
+      <article class="prose">
+
+        <p class="dropcap">
+          Every txt2img workflow in ComfyUI contains an Empty Latent Image node. It is often
+          overlooked because it feels like a trivial "set the canvas size" step — but
+          understanding what it actually creates explains why the diffusion pipeline is
+          structured the way it is.
+        </p>
+
+        <p>What the node does: it creates a blank tensor of zeros in latent space — not a pixel canvas. This tensor is the starting point the KSampler will immediately fill with random Gaussian noise (seeded by your seed value) before denoising begins. Without it, the KSampler has nothing to work with.</p>
+
+        <p>Why latent space, not pixels? The diffusion model never sees or generates pixels. It works entirely inside the compressed latent space produced by the VAE encoder. At the end of the pipeline the VAE decoder converts the final denoised latent back into a pixel image. The Empty Latent Image node creates the correctly-shaped container for this latent-space process.</p>
+
+        <h2 id="empty-latent">Node Settings</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Setting</th>
+              <th>What It Controls</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Width</strong></td>
+              <td>Output image width in pixels</td>
+              <td>The node divides by 8 internally (VAE compression factor) to compute latent width. 1024 px → 128 latent units. Must be a multiple of 64 (SDXL) or 16 (DiT models).</td>
+            </tr>
+            <tr>
+              <td><strong>Height</strong></td>
+              <td>Output image height in pixels</td>
+              <td>Same 8× compression applies. Non-matching multiples cause artefacts or ComfyUI rounding errors.</td>
+            </tr>
+            <tr>
+              <td><strong>Batch Size</strong></td>
+              <td>Number of images generated in one pass</td>
+              <td>Batch 4 = 4 independent latents denoised in parallel. Multiplies VRAM usage roughly linearly. Each image in the batch uses a seed offset (+0, +1, +2…).</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="latent-shape">Latent Tensor Shape</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Model Family</th>
+              <th>Channels</th>
+              <th>Latent Shape (1024×1024 example)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>SDXL / SD1.5</td>
+              <td>4-channel</td>
+              <td><code>[batch, 4, 128, 128]</code></td>
+            </tr>
+            <tr>
+              <td>Flux.1, Flux.2, Z-Image, Qwen-Image</td>
+              <td>16-channel</td>
+              <td><code>[batch, 16, 128, 128]</code> — encodes richer information per spatial unit, contributing to better fine detail and colour accuracy</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="after-creation">What Happens After Creation</h2>
+
+        <ol>
+          <li>The KSampler receives the empty latent and immediately populates it with random Gaussian noise using the seed value. The "empty" tensor is essentially discarded — the seed-noise is the true starting point.</li>
+          <li>The diffusion model denoises this noise for N steps, guided by the text conditioning from the text encoder.</li>
+          <li>The final clean latent exits the KSampler and goes to VAE Decode → pixel image.</li>
+        </ol>
+
+        <div class="callout callout--note">
+          In img2img workflows the Empty Latent Image node is not used — the input image is VAE-encoded into a real latent, partially noised, and fed directly to the KSampler. The Empty Latent Image node is exclusively a txt2img starting point. The Width and Height fields are the only place in a standard txt2img workflow where you set output resolution — they must respect the model's resolution constraints (see <a href="ai-models-0c.html#resolution">0c: Resolution Constraints</a>).
+        </div>
+
+      </article>
+
+      <nav class="section-nav">
+        <a href="ai-models-0d.html">
+          <span class="section-nav__dir">← Previous</span>
+          <span class="section-nav__title">0d. Generation Modes</span>
+        </a>
+        <a href="ai-models-1.html">
+          <span class="section-nav__dir">Next →</span>
+          <span class="section-nav__title">1. Model Landscape</span>
+        </a>
+      </nav>
+
+      <footer class="doc-footer">
+        <span><a href="../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-06</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../assets/js/site.js"></script>
+</body>
+</html>
