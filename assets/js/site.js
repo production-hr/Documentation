@@ -35,18 +35,18 @@
     return null;
   }
 
+  function navItem(d, activeId) {
+    var isActive = d.id === activeId;
+    return '<li data-doc-item data-title="' + escapeAttr(d.title.toLowerCase()) +
+           '" data-tags="' + escapeAttr((d.tags || []).join(' ').toLowerCase()) + '">' +
+           '<a href="' + rel(d.file) + '"' +
+           (isActive ? ' class="is-active"' : '') + '>' +
+           escapeHtml(d.title) + '</a></li>';
+  }
+
   function buildSidebar(manifest) {
     var sidebar = document.querySelector('[data-nav]');
     if (!sidebar) return;
-
-    // group by category
-    var groups = {};
-    var order = [];
-    manifest.docs.forEach(function (d) {
-      var cat = d.category || 'General';
-      if (!groups[cat]) { groups[cat] = []; order.push(cat); }
-      groups[cat].push(d);
-    });
 
     var activeId = currentDocId(manifest);
     var html = '';
@@ -61,22 +61,65 @@
     // Search box
     html += '<input type="search" class="search-box" placeholder="Filter docs…" data-search />';
 
-    order.forEach(function (cat) {
+    // Separate flat docs (no section) from hierarchical docs (section present)
+    var flat = {}; var flatOrder = [];
+    var sections = {}; var sectionOrder = [];
+
+    manifest.docs.forEach(function (d) {
+      var cat = d.category || 'General';
+      if (d.section) {
+        var s = d.section, sub = d.subsection || '';
+        if (!sections[s]) { sections[s] = { subs: {}, subOrder: [] }; sectionOrder.push(s); }
+        var sec = sections[s];
+        if (!sec.subs[sub]) { sec.subs[sub] = { cats: {}, catOrder: [] }; sec.subOrder.push(sub); }
+        var subsec = sec.subs[sub];
+        if (!subsec.cats[cat]) { subsec.cats[cat] = []; subsec.catOrder.push(cat); }
+        subsec.cats[cat].push(d);
+      } else {
+        if (!flat[cat]) { flat[cat] = []; flatOrder.push(cat); }
+        flat[cat].push(d);
+      }
+    });
+
+    // Render flat categories
+    flatOrder.forEach(function (cat) {
       html += '<div class="nav-section">';
       html += '<div class="nav-section__title">' + escapeHtml(cat) + '</div><ul>';
-      groups[cat].forEach(function (d) {
-        var isActive = d.id === activeId;
-        html += '<li data-doc-item data-title="' + escapeAttr(d.title.toLowerCase()) +
-                '" data-tags="' + escapeAttr((d.tags || []).join(' ').toLowerCase()) + '">' +
-                '<a href="' + rel(d.file) + '"' +
-                (isActive ? ' class="is-active"' : '') + '>' +
-                escapeHtml(d.title) + '</a></li>';
-      });
+      flat[cat].forEach(function (d) { html += navItem(d, activeId); });
       html += '</ul></div>';
+    });
+
+    // Render hierarchical sections: section > subsection > category
+    sectionOrder.forEach(function (s) {
+      var sec = sections[s];
+      html += '<div class="nav-section" data-nav-section>';
+      html += '<div class="nav-section__title">' + escapeHtml(s) + '</div>';
+      sec.subOrder.forEach(function (sub) {
+        var subsec = sec.subs[sub];
+        html += '<div class="nav-sub" data-nav-sub>';
+        if (sub) {
+          html += '<div class="nav-section__title nav-section__title--l2">' + escapeHtml(sub) + '</div>';
+        }
+        subsec.catOrder.forEach(function (cat) {
+          html += '<div class="nav-leaf" data-nav-leaf>';
+          html += '<div class="nav-section__title nav-section__title--l3">' + escapeHtml(cat) + '</div>';
+          html += '<ul>';
+          subsec.cats[cat].forEach(function (d) { html += navItem(d, activeId); });
+          html += '</ul></div>';
+        });
+        html += '</div>';
+      });
+      html += '</div>';
     });
 
     sidebar.innerHTML = html;
     wireSearch();
+  }
+
+  function anyVisible(nodeList) {
+    return Array.prototype.some.call(nodeList, function (el) {
+      return el.style.display !== 'none';
+    });
   }
 
   function wireSearch() {
@@ -90,14 +133,21 @@
           li.dataset.tags.indexOf(q) !== -1;
         li.style.display = match ? '' : 'none';
       });
-      // hide empty section titles
+      // hide empty leaf groups
+      document.querySelectorAll('[data-nav-leaf]').forEach(function (leaf) {
+        var items = leaf.querySelectorAll('[data-doc-item]');
+        leaf.style.display = anyVisible(items) ? '' : 'none';
+      });
+      // hide empty subsections
+      document.querySelectorAll('[data-nav-sub]').forEach(function (sub) {
+        var leaves = sub.querySelectorAll('[data-nav-leaf]');
+        sub.style.display = (leaves.length === 0 || anyVisible(leaves)) ? '' : 'none';
+      });
+      // hide empty top-level sections
       document.querySelectorAll('.nav-section').forEach(function (sec) {
         var items = sec.querySelectorAll('[data-doc-item]');
         if (items.length === 0) return;
-        var anyVisible = Array.prototype.some.call(items, function (li) {
-          return li.style.display !== 'none';
-        });
-        sec.style.display = anyVisible ? '' : 'none';
+        sec.style.display = anyVisible(items) ? '' : 'none';
       });
     });
   }

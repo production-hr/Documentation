@@ -220,6 +220,38 @@ body {
   border-radius: 0 2px 2px 0;
 }
 
+/* --- Nested nav levels (subsection + category) --- */
+.nav-sub {
+  margin-top: 0.5rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid var(--sidebar-rule);
+  margin-left: 0.25rem;
+}
+.nav-leaf {
+  margin-top: 0.25rem;
+}
+.nav-section__title--l2 {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--sidebar-fg);
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  padding-left: 0.5rem;
+}
+.nav-section__title--l3 {
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sidebar-muted);
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  margin-top: 0.75rem;
+  padding-left: 0.5rem;
+}
+
 /* --- Search box (inside dark sidebar) --- */
 .search-box {
   width: 100%;
