@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ComfyUI: Character Generation Workflows — Archive</title>
+  <link rel="stylesheet" href="../../../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../../../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>ComfyUI</span>
+        <span>2026-05-07</span>
+      </div>
+
+      <h1 class="doc-title">ComfyUI: Character Generation Workflows</h1>
+
+      <p class="doc-lede">Living reference for production ComfyUI workflows — skin variation matrices, LoRA-based refinement, and ControlNet pose generation for character work.</p>
+
+      <article class="prose">
+
+        <ol>
+          <li><a href="#fitzpatrick">SDXL — Fitzpatrick Skin Variations &amp; Age Progression</a></li>
+          <li><a href="#flux-refiner">Flux — LoRA Refiner &amp; Detailer</a></li>
+          <li><a href="#flux-controlnet">Flux — ControlNet Poser &amp; Detailer</a></li>
+        </ol>
+
+        <hr>
+
+        <p class="dropcap">Each workflow here is a discrete ComfyUI graph built for a specific phase of character production. They share a common input — a reference portrait or character sheet — and differ in what they do with it: generating diversity matrices, refining skin detail, or transplanting a new pose. LoRA weights and ControlNet modes are documented per workflow; configuration guidance applies to the version last reviewed in March 2026.</p>
+
+        <h2 id="fitzpatrick">1. SDXL — Fitzpatrick Skin Variations &amp; Age Progression</h2>
+
+        <div class="callout callout--warn">
+          Obsolete. Used for the 2022 Project Clinique. Documented here for reference.
+        </div>
+
+        <p>Takes a reference image and generates a matrix of age-progressed variants across the full Fitzpatrick skin tone scale. For an input portrait, the workflow produces output images spanning a defined age range for each of the six Fitzpatrick skin classifications (Types I–VI) — useful for character diversity exploration and reference sheet generation.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>SDXL Base Model</td>
+              <td>Primary image generation backbone for photorealistic character outputs</td>
+            </tr>
+            <tr>
+              <td>Fitzpatrick Scale Conditioning</td>
+              <td>Applies skin tone conditioning across all 6 skin type categories (Types I–VI) — from fair/pale to deeply pigmented</td>
+            </tr>
+            <tr>
+              <td>Age Progression Conditioning</td>
+              <td>Drives age variation across a user-defined range (e.g. 20–70 years), applied per skin type</td>
+            </tr>
+            <tr>
+              <td>Reference Image Input</td>
+              <td>Input portrait used as the identity and structural anchor for all generated variants</td>
+            </tr>
+            <tr>
+              <td>KSampler</td>
+              <td>Core sampling node controlling steps, CFG, and denoise strength for each output variant</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>For each run the workflow produces a grid: rows are Fitzpatrick skin types (I–VI), columns are age increments within the defined range.</p>
+
+        <ol>
+          <li>Load reference image as identity anchor</li>
+          <li>Define age range and step increments (e.g. 20 to 70, step 10)</li>
+          <li>For each Fitzpatrick type (I–VI): encode skin tone conditioning prompt</li>
+          <li>For each age value in range: combine skin tone + age prompts</li>
+          <li>Run SDXL KSampler with combined conditioning per variant</li>
+          <li>Save all output images (batch or grid)</li>
+        </ol>
+
+        <h2 id="flux-refiner">2. Flux — LoRA Refiner &amp; Detailer</h2>
+
+        <p>Takes an input image and produces a high-resolution, skin-detailed version of the character. The workflow applies Flux as the base generation model, enhanced with optional character LoRAs for identity consistency and detailing LoRAs for skin texture and micro-detail enhancement. Designed as the final refinement pass in a character production pipeline.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Flux Base Model</td>
+              <td>Primary diffusion backbone — handles high-resolution upscaling and detail synthesis</td>
+            </tr>
+            <tr>
+              <td>Character LoRA(s)</td>
+              <td>Optional: locks in character identity and likeness from a trained LoRA — maintains consistency across refinement</td>
+            </tr>
+            <tr>
+              <td>Detailing LoRA(s)</td>
+              <td>Optional: injects skin texture, pore detail, and micro-surface realism — can be stacked with character LoRA</td>
+            </tr>
+            <tr>
+              <td>Reference Image Input</td>
+              <td>Source image fed into the workflow as the base for refinement (e.g. a character sheet output or portrait)</td>
+            </tr>
+            <tr>
+              <td>Upscaler (optional)</td>
+              <td>Pre-pass upscale before the KSampler to maximise output resolution</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p><strong>LoRA configuration:</strong> Character LoRA applied at 0.1–0.25 to guide identity without overriding the input image structure. Detailing LoRA applied at 0.3–0.5 for texture augmentation without altering overall appearance. Both can be used simultaneously with independent weights.</p>
+
+        <div class="callout callout--note">
+          The SDXL Face Detailer node previously used in this workflow is obsolete. Skin microdetail is now handled by the detailing LoRA pass.
+        </div>
+
+        <h2 id="flux-controlnet">3. Flux — ControlNet Poser &amp; Detailer</h2>
+
+        <p>Takes an input image and a pose reference and produces a high-resolution modified version of the character in the new pose. The workflow applies Flux with ControlNet guidance, enhanced with optional character LoRAs for identity consistency. Designed to recreate custom poses of an existing character without retraining.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Component</th>
+              <th>Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Flux Base Model</td>
+              <td>Primary diffusion backbone — handles high-resolution synthesis and detail</td>
+            </tr>
+            <tr>
+              <td>Character LoRA(s)</td>
+              <td>Optional: locks in character identity and likeness — maintains consistency across pose variants</td>
+            </tr>
+            <tr>
+              <td>ControlNet</td>
+              <td>Structural guidance from the pose reference — supports depth, Canny, and OpenPose modes</td>
+            </tr>
+            <tr>
+              <td>Reference Image Input</td>
+              <td>Source character image (e.g. character sheet or portrait) providing identity</td>
+            </tr>
+            <tr>
+              <td>Pose Image Input</td>
+              <td>Image defining the target pose to transfer onto the character</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p><strong>LoRA configuration:</strong> Character LoRA applied at 0.6–0.8 to guide identity while allowing pose transfer. Detailing LoRA applied at 0.3–0.5 for texture augmentation. Both can be used simultaneously with independent weights.</p>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../../../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-07</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../../../assets/js/site.js"></script>
+</body>
+</html>

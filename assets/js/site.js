@@ -6,18 +6,22 @@
 
   // ── Path helpers ──────────────────────────────────────────
 
+  function getDepth() {
+    var parts = window.location.pathname.replace(/^\//, '').split('/');
+    var last = parts[parts.length - 1];
+    if (last === '' || last.indexOf('.') !== -1) parts.pop();
+    return parts.length;
+  }
+
   function manifestPath() {
-    return window.location.pathname.indexOf('/pages/') !== -1
-      ? '../docs.json'
-      : 'docs.json';
+    var d = getDepth();
+    return d === 0 ? 'docs.json' : Array(d).fill('..').join('/') + '/docs.json';
   }
 
   function rel(href) {
-    if (window.location.pathname.indexOf('/pages/') !== -1) {
-      if (href.indexOf('pages/') === 0) return '../' + href;
-      if (href === 'index.html' || href === '') return '../index.html';
-    }
-    return href;
+    var d = getDepth();
+    if (d === 0) return href;
+    return Array(d).fill('..').join('/') + '/' + href;
   }
 
   function enc(s) { return encodeURIComponent(s); }
@@ -128,17 +132,21 @@
       }
 
     } else if (route.length === 1) {
-      // Section level: list subsections
+      // Section level: direct docs first, then subsection links
       var section = route[0];
-      var subs = []; var seenSubs = {};
+      var directDocs = []; var subs = []; var seenSubs = {};
       manifest.docs.forEach(function (d) {
         if (d.section !== section) return;
-        var sub = d.subsection || 'General';
-        if (!seenSubs[sub]) { seenSubs[sub] = true; subs.push(sub); }
+        if (!d.subsection) {
+          directDocs.push(d);
+        } else {
+          if (!seenSubs[d.subsection]) { seenSubs[d.subsection] = true; subs.push(d.subsection); }
+        }
       });
 
       html += '<div class="nav-section">';
       html += '<div class="nav-section__title">' + escapeHtml(section) + '</div><ul>';
+      directDocs.forEach(function (d) { html += navItem(d, activeId); });
       subs.forEach(function (sub) {
         html += '<li><a href="' + rel('index.html') + '#' + enc(section) + '/' + enc(sub) + '">' +
                 escapeHtml(sub) + '</a></li>';
@@ -284,20 +292,30 @@
   }
 
   function renderSubsectionCards(manifest, grid, section) {
-    var subs = {}; var order = [];
+    var directDocs = []; var subs = {}; var order = [];
     manifest.docs.forEach(function (d) {
       if (d.section !== section) return;
-      var sub = d.subsection || 'General';
-      if (!subs[sub]) { subs[sub] = 0; order.push(sub); }
-      subs[sub]++;
+      if (!d.subsection) {
+        directDocs.push(d);
+      } else {
+        if (!subs[d.subsection]) { subs[d.subsection] = 0; order.push(d.subsection); }
+        subs[d.subsection]++;
+      }
     });
-    grid.innerHTML = order.map(function (sub) {
+    var html = order.map(function (sub) {
       var count = subs[sub];
       return '<a class="doc-card doc-card--nav" href="#' + enc(section) + '/' + enc(sub) + '">' +
              '<div class="doc-card__title">' + escapeHtml(sub) + '</div>' +
              '<div class="doc-card__excerpt">' + count + (count === 1 ? ' document' : ' documents') + '</div>' +
              '</a>';
     }).join('');
+    html += directDocs.map(function (d) {
+      return '<a class="doc-card" href="' + escapeAttr(d.file) + '">' +
+             '<div class="doc-card__title">' + escapeHtml(d.title) + '</div>' +
+             '<div class="doc-card__excerpt">' + escapeHtml(d.excerpt || '') + '</div>' +
+             '</a>';
+    }).join('');
+    grid.innerHTML = html;
   }
 
   function renderCategoryDocs(manifest, grid, section, subsection) {

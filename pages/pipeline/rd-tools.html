@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>R&amp;D Tools for Production — Archive</title>
+  <link rel="stylesheet" href="../../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Pipeline</span>
+        <span>2026-05-07</span>
+      </div>
+
+      <h1 class="doc-title">R&amp;D Tools for Production</h1>
+
+      <p class="doc-lede">Custom tooling required to run the AI character pipeline at production scale — identity management, face replacement, and model infrastructure.</p>
+
+      <article class="prose">
+
+        <ol>
+          <li><a href="#character-identity">Character Identity</a></li>
+          <li><a href="#character-loras">Character LoRAs</a></li>
+          <li><a href="#face-replacement">Face Replacement and Detailing</a></li>
+          <li><a href="#model-management">Model Management</a></li>
+        </ol>
+
+        <hr>
+
+        <p class="dropcap">The AI character pipeline depends on a layer of production tooling that does not exist off the shelf. These are not third-party applications to install — they are systems to build: a character identity database, a LoRA management infrastructure, a face replacement compositing pipeline, and a model server that can keep pace with the production schedule. Each addresses a specific failure mode that emerges when generative AI moves from individual shots to a continuous series.</p>
+
+        <h2 id="character-identity">1. Character Identity</h2>
+
+        <p>A production character is not a single image. It is a structured identity pack — a set of approved assets that together define how that character looks across every shot, level, and lighting condition. Without a managed database, identity consistency degrades as the production grows: different artists pull different references, LoRAs are trained on inconsistent sets, and the character drifts.</p>
+
+        <p>The character database currently runs in Airtable, automated by n8n workflows. It stores and tracks the full character DNA for each cast member:</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Asset type</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Character sheets</td>
+              <td>Head and body reference turnarounds establishing the approved design</td>
+            </tr>
+            <tr>
+              <td>Costumes</td>
+              <td>All costume variants required for the show, keyed to episode/scene</td>
+            </tr>
+            <tr>
+              <td>Expression set</td>
+              <td>Full range of approved facial expressions for the character</td>
+            </tr>
+            <tr>
+              <td>Camera angle set</td>
+              <td>Full set of approved camera angles — front, three-quarter, profile, low, high</td>
+            </tr>
+            <tr>
+              <td>Remade photographs</td>
+              <td>Legacy character images recreated at maximum resolution using the approved character sheet — a prompt is extracted from each original and the image is regenerated for consistency</td>
+            </tr>
+            <tr>
+              <td>LoRA training set</td>
+              <td>Curated image sets specifically prepared for LoRA training, balanced across angles, lighting, and expression</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="character-loras">2. Character LoRAs</h2>
+
+        <p>Each character requires a dedicated LoRA per generation model in active use. A LoRA trained for Wan is not portable to LTX-2 or Flux; as the model roster evolves, the LoRA library must be maintained in parallel. The system needs to track which LoRA version corresponds to which model version, flag when a base model update invalidates an existing LoRA, and queue retraining automatically.</p>
+
+        <p>Beyond the character LoRA, a second layer of detailing LoRAs handles consistency for elements that fall outside the face region or drift under generation:</p>
+
+        <ul>
+          <li>Hair — style, colour, and motion behaviour specific to the character</li>
+          <li>Costumes — fabric, detail, and colour matching across shots</li>
+          <li>Gloves and hats — accessories that frequently drift or disappear under generation</li>
+          <li>Jewelry — earrings, necklaces, and other identity-critical accessories</li>
+          <li>Personality expressions — character-specific micro-expressions that define screen presence (e.g. a signature tongue-out, a habitual face scrunch)</li>
+        </ul>
+
+        <div class="callout callout--note">
+          Detailing LoRAs are applied as a refinement layer on top of the character LoRA, not as replacements. The character LoRA anchors the overall identity; detailing LoRAs recover specific elements that the base swap or generation pass loses.
+        </div>
+
+        <h2 id="face-replacement">3. Face Replacement and Detailing</h2>
+
+        <p>Face swap operates on the full frame. For high-fidelity work — close-ups, hero shots, sustained dialogue — a more precise approach is needed: isolate the face region, work on it at increased resolution, then composite the result back onto the original video.</p>
+
+        <p>This requires a system that can reliably detect and mask the face across frames, handle partial occlusion and motion, process the isolated region at a higher resolution budget than the full frame allows, and blend the result back without a visible boundary. The system must operate on both original footage (as a detailing pass for live action) and on AI-generated sequences (as a stabilisation pass at any pipeline level).</p>
+
+        <div class="callout">
+          The face isolation and compositing pipeline is separate from the face swap model. Face swap replaces an identity; this system refines it. Both may be applied in sequence on the same shot.
+        </div>
+
+        <h2 id="model-management">4. Model Management</h2>
+
+        <p>A production that runs across multiple AI models — video generation, face swap, relighting, upscaling, LoRA enhancement — requires a server infrastructure that can do more than run inference. It must track what is running, keep models current, and document the exact configuration used to produce any given output so that shots can be reproduced or retried consistently.</p>
+
+        <p>Requirements for the model server:</p>
+
+        <ul>
+          <li>Run all production models concurrently or on a fast-switching schedule</li>
+          <li>Update models without disrupting active production queues</li>
+          <li>Serve generated video output to the production pipeline</li>
+          <li>Maintain a log of model versions, LoRA versions, and inference parameters used per shot</li>
+          <li>Document compatibility between model versions — which LoRAs are valid for which checkpoints, which node graphs are broken by a model update</li>
+        </ul>
+
+        <div class="callout callout--warn">
+          Model version drift is the primary source of shot inconsistency in long-form production. A shot generated in week two with a different model version than a shot generated in week six will not match, regardless of prompt or LoRA. Version locking and documentation are not optional.
+        </div>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-07</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../../assets/js/site.js"></script>
+</body>
+</html>

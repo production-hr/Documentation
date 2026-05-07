@@ -5,6 +5,46 @@
   },
   "docs": [
     {
+      "id": "rd-tools",
+      "title": "R&D Tools for Production",
+      "section": "Pipeline",
+      "file": "pages/pipeline/rd-tools.html",
+      "excerpt": "Custom tooling for the AI character pipeline — identity database, LoRA infrastructure, face replacement, and model management.",
+      "tags": ["pipeline", "rd", "lora", "character", "identity", "face-swap", "model-management"],
+      "updated": "2026-05-07"
+    },
+    {
+      "id": "n8n-workflows",
+      "title": "n8n Workflow Documentation",
+      "section": "Pipeline",
+      "file": "pages/pipeline/n8n-workflows.html",
+      "excerpt": "Living reference for image generation and AI pipeline automation workflows — APIs, data flow, and steps for each.",
+      "tags": ["pipeline", "n8n", "automation", "airtable", "wavespeed", "character", "workflow"],
+      "updated": "2026-05-07"
+    },
+    {
+      "id": "pipeline-evolution",
+      "title": "Digital Humans: 3D to AI Transition",
+      "section": "Pipeline",
+      "subsection": "Pipeline Evolution",
+      "category": "Overview",
+      "file": "pages/pipeline/pipeline-evolution/pipeline-evolution.html",
+      "excerpt": "Four levels of AI integration in character pipelines, from post-processing to fully generative production.",
+      "tags": ["pipeline", "ai", "3d", "evolution", "levels", "digital-humans"],
+      "updated": "2026-05-07"
+    },
+    {
+      "id": "pipeline-workflows",
+      "title": "Character Workflow: Production Matrix",
+      "section": "Pipeline",
+      "subsection": "Pipeline Evolution",
+      "category": "Overview",
+      "file": "pages/pipeline/pipeline-evolution/pipeline-workflows.html",
+      "excerpt": "Production matrix across four pipeline configurations with face swap integration guide.",
+      "tags": ["pipeline", "workflow", "face-swap", "ai", "character", "matrix"],
+      "updated": "2026-05-07"
+    },
+    {
       "id": "getting-started",
       "title": "Getting Started",
       "category": "Meta",
@@ -23,12 +63,23 @@
       "updated": "2026-05-05"
     },
     {
+      "id": "comfyui-character-workflows",
+      "title": "ComfyUI: Character Generation Workflows",
+      "section": "AI",
+      "subsection": "ComfyUI",
+      "category": "Character Production",
+      "file": "pages/ai/comfyui/comfyui-character-workflows.html",
+      "excerpt": "Production workflows for skin variation matrices, Flux LoRA refinement, and ControlNet pose generation.",
+      "tags": ["comfyui", "workflow", "character", "flux", "lora", "controlnet", "skin", "pose"],
+      "updated": "2026-05-07"
+    },
+    {
       "id": "comfyui-installation",
       "title": "ComfyUI: Installation & Setup",
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Getting Started",
-      "file": "pages/comfyui-installation.html",
+      "file": "pages/ai/comfyui/comfyui-installation.html",
       "excerpt": "Install ComfyUI on Windows with CUDA, Manager, launch flags, and update workflow.",
       "tags": ["comfyui", "installation", "setup", "cuda"],
       "updated": "2026-05-05"
@@ -39,7 +90,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Getting Started",
-      "file": "pages/comfyui-interface.html",
+      "file": "pages/ai/comfyui/comfyui-interface.html",
       "excerpt": "Canvas navigation, node anatomy, wire colour types, the queue, and workflow I/O.",
       "tags": ["comfyui", "interface", "nodes", "canvas"],
       "updated": "2026-05-05"
@@ -50,7 +101,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Getting Started",
-      "file": "pages/comfyui-workflows.html",
+      "file": "pages/ai/comfyui/comfyui-workflows.html",
       "excerpt": "Step-by-step SDXL and Flux.1 txt2img workflows, img2img, and key node reference.",
       "tags": ["comfyui", "workflow", "sdxl", "flux"],
       "updated": "2026-05-05"
@@ -61,7 +112,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Getting Started",
-      "file": "pages/comfyui-vram.html",
+      "file": "pages/ai/comfyui/comfyui-vram.html",
       "excerpt": "GPU tier compatibility, VRAM reduction strategies, precision formats, and monitoring.",
       "tags": ["comfyui", "vram", "hardware", "performance"],
       "updated": "2026-05-05"
@@ -72,7 +123,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Image Models Reference",
-      "file": "pages/ai-image-models-reference.html",
+      "file": "pages/ai/comfyui/ai-image-models-reference.html",
       "excerpt": "Index and component cross-reference for the full AI image models reference.",
       "tags": ["ai", "models", "reference", "flux", "comfyui", "quantisation", "prompts"],
       "updated": "2026-05-06"
@@ -83,7 +134,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Image Models Reference",
-      "file": "pages/ai-models-0a.html",
+      "file": "pages/ai/comfyui/ai-models-0a.html",
       "excerpt": "The six nodes every ComfyUI workflow contains and the most common mistakes at each stage.",
       "tags": ["ai", "models", "comfyui", "pipeline", "vae", "ksampler", "clip"],
       "updated": "2026-05-06"
@@ -94,7 +145,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Image Models Reference",
-      "file": "pages/ai-models-0b.html",
+      "file": "pages/ai/comfyui/ai-models-0b.html",
       "excerpt": "What each pipeline component actually is mathematically — VAE, text encoder, scheduler, LoRA.",
       "tags": ["ai", "models", "vae", "lora", "scheduler", "internals"],
       "updated": "2026-05-06"
@@ -105,7 +156,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Image Models Reference",
-      "file": "pages/ai-models-0c.html",
+      "file": "pages/ai/comfyui/ai-models-0c.html",
       "excerpt": "Why VAE, encoder, scheduler, and LoRA components cannot be freely swapped between model families.",
       "tags": ["ai", "models", "compatibility", "resolution", "vae", "lora"],
       "updated": "2026-05-06"
@@ -116,7 +167,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Image Models Reference",
-      "file": "pages/ai-models-0d.html",
+      "file": "pages/ai/comfyui/ai-models-0d.html",
       "excerpt": "txt2img, img2img, inpainting, ControlNet, upscaling, and the full denoise continuum.",
       "tags": ["ai", "models", "txt2img", "img2img", "inpainting", "controlnet", "denoise"],
       "updated": "2026-05-06"
@@ -127,7 +178,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Image Models Reference",
-      "file": "pages/ai-models-0e.html",
+      "file": "pages/ai/comfyui/ai-models-0e.html",
       "excerpt": "What the Empty Latent Image node creates and how Width and Height map to latent tensor shape.",
       "tags": ["ai", "models", "comfyui", "latent", "vae"],
       "updated": "2026-05-06"
@@ -138,7 +189,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Image Models Reference",
-      "file": "pages/ai-models-1.html",
+      "file": "pages/ai/comfyui/ai-models-1.html",
       "excerpt": "SDXL, Flux.1, Flux.2, Z-Image, and Qwen-Image — parameters, VRAM, and typical filenames.",
       "tags": ["ai", "models", "flux", "sdxl", "qwen", "z-image", "vram"],
       "updated": "2026-05-06"
@@ -149,7 +200,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Image Models Reference",
-      "file": "pages/ai-models-2.html",
+      "file": "pages/ai/comfyui/ai-models-2.html",
       "excerpt": "What dev, schnell, klein, pro, Turbo, Kontext, and other labels mean in practice.",
       "tags": ["ai", "models", "flux", "labels", "license", "distillation"],
       "updated": "2026-05-06"
@@ -160,7 +211,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Image Models Reference",
-      "file": "pages/ai-models-3.html",
+      "file": "pages/ai/comfyui/ai-models-3.html",
       "excerpt": "BF16, FP8, GGUF Q4–Q8, NVF4 — quality vs VRAM trade-offs for image DiT models.",
       "tags": ["ai", "models", "quantisation", "gguf", "bf16", "fp8", "vram"],
       "updated": "2026-05-06"
@@ -171,7 +222,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Image Models Reference",
-      "file": "pages/ai-models-4.html",
+      "file": "pages/ai/comfyui/ai-models-4.html",
       "excerpt": "UNet, DiT, Flow Matching, S3-DiT, LLM text encoders — how each works and where it's used.",
       "tags": ["ai", "models", "architecture", "unet", "dit", "flux", "transformer"],
       "updated": "2026-05-06"
@@ -182,7 +233,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Image Models Reference",
-      "file": "pages/ai-models-5.html",
+      "file": "pages/ai/comfyui/ai-models-5.html",
       "excerpt": "Where every file type belongs in models/ — checkpoints, diffusion_models, clip, vae, loras.",
       "tags": ["ai", "models", "comfyui", "folders", "setup", "installation"],
       "updated": "2026-05-06"
@@ -193,7 +244,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Image Models Reference",
-      "file": "pages/ai-models-6.html",
+      "file": "pages/ai/comfyui/ai-models-6.html",
       "excerpt": "Annotated examples decoding flux2-dev-Q4_K_M.gguf and qwen-image-2512-fp8.safetensors.",
       "tags": ["ai", "models", "filenames", "gguf", "safetensors", "quantisation"],
       "updated": "2026-05-06"
@@ -204,7 +255,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Image Models Reference",
-      "file": "pages/ai-models-7.html",
+      "file": "pages/ai/comfyui/ai-models-7.html",
       "excerpt": "Encoder-specific prompt dialects, per-model examples, and universal principles for all models.",
       "tags": ["ai", "models", "prompts", "clip", "t5", "flux", "sdxl", "qwen"],
       "updated": "2026-05-06"
@@ -215,7 +266,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Image Models Reference",
-      "file": "pages/pipeline-svg.html",
+      "file": "pages/ai/comfyui/pipeline-svg.html",
       "excerpt": "Character pipeline diagram rendered as inline SVG — no dependencies, dark-mode aware.",
       "tags": ["pipeline", "svg", "diagram", "character", "ai"],
       "updated": "2026-05-05"
@@ -226,7 +277,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Image Models Reference",
-      "file": "pages/pipeline-mermaid.html",
+      "file": "pages/ai/comfyui/pipeline-mermaid.html",
       "excerpt": "Character pipeline diagram generated from text syntax via Mermaid.js.",
       "tags": ["pipeline", "mermaid", "diagram", "character", "ai"],
       "updated": "2026-05-05"
@@ -237,7 +288,7 @@
       "section": "AI",
       "subsection": "ComfyUI",
       "category": "Image Models Reference",
-      "file": "pages/pipeline-css.html",
+      "file": "pages/ai/comfyui/pipeline-css.html",
       "excerpt": "Character pipeline diagram built from pure HTML and CSS — no SVG, no scripts.",
       "tags": ["pipeline", "css", "diagram", "character", "ai"],
       "updated": "2026-05-05"

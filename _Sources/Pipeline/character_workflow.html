@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Character Workflow Evolution</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --c0: #0d0d14;
+    --accent0: #50d49a;
+    --accent1: #60b4ff;
+    --accent2: #b48eff;
+    --accent4: #ff7090;
+    --text: #ffffff;
+    --text-mid: #c8c8e0;
+    --text-dim: #7878a0;
+    --border: rgba(255,255,255,0.08);
+  }
+
+  body {
+    background: var(--c0);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 50px 40px;
+  }
+
+  .wrapper { max-width: 1500px; margin: 0 auto; }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+    opacity: 0;
+    animation: fadeUp 0.7s ease forwards;
+  }
+
+  .header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 6vw, 80px);
+    letter-spacing: 3px;
+    line-height: 1;
+    color: #fff;
+  }
+
+  .header h1 span { color: var(--accent1); }
+
+  .header-sub {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding-bottom: 6px;
+  }
+
+  /* PROGRESS ROW */
+  .progress-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 3px;
+    margin-bottom: 3px;
+    opacity: 0;
+    animation: fadeUp 0.7s ease 0.15s forwards;
+  }
+
+  .prog-seg {
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .prog-seg:nth-child(1) { background: #0d1c14; border-top: 3px solid var(--accent0); }
+  .prog-seg:nth-child(2) { background: #102030; border-top: 3px solid var(--accent1); }
+  .prog-seg:nth-child(3) { background: #181028; border-top: 3px solid var(--accent2); }
+  .prog-seg:nth-child(4) { background: #241018; border-top: 3px solid var(--accent4); }
+
+  .prog-pct {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 38px;
+    line-height: 1;
+    letter-spacing: 1px;
+    min-width: 90px;
+  }
+
+  .prog-pct span {
+    font-size: 18px;
+    opacity: 0.7;
+    letter-spacing: 1px;
+  }
+
+  .prog-seg:nth-child(1) .prog-pct { color: var(--accent0); }
+  .prog-seg:nth-child(2) .prog-pct { color: var(--accent1); }
+  .prog-seg:nth-child(3) .prog-pct { color: var(--accent2); }
+  .prog-seg:nth-child(4) .prog-pct { color: var(--accent4); }
+
+  .prog-title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #fff;
+    margin-bottom: 3px;
+  }
+
+  .prog-sub {
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  /* MAIN GRID */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 3px;
+    opacity: 0;
+    animation: fadeUp 0.7s ease 0.3s forwards;
+  }
+
+  .col:nth-child(1) { background: #0d1810; }
+  .col:nth-child(2) { background: #101520; }
+  .col:nth-child(3) { background: #121020; }
+  .col:nth-child(4) { background: #1a1015; }
+
+  .col-header {
+    padding: 22px 24px 18px;
+    border-bottom: 2px solid;
+  }
+
+  .col:nth-child(1) .col-header { border-color: var(--accent0); }
+  .col:nth-child(2) .col-header { border-color: var(--accent1); }
+  .col:nth-child(3) .col-header { border-color: var(--accent2); }
+  .col:nth-child(4) .col-header { border-color: var(--accent4); }
+
+  .col-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .col:nth-child(1) .col-title { color: var(--accent0); }
+  .col:nth-child(2) .col-title { color: var(--accent1); }
+  .col:nth-child(3) .col-title { color: var(--accent2); }
+  .col:nth-child(4) .col-title { color: var(--accent4); }
+
+  .col-tools {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    line-height: 1.8;
+  }
+
+  /* ITEMS */
+  .items { padding: 8px 0; }
+
+  .item {
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.15s;
+  }
+
+  .item:last-child { border-bottom: none; }
+  .item:hover { background: rgba(255,255,255,0.04); }
+  .item.cat-base { color: var(--text-mid); }
+  .item.cat-ai { color: #fff; font-weight: 600; }
+
+  .ai-badge {
+    display: none;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .item.cat-ai .ai-badge { display: inline-block; }
+
+  .col:nth-child(1) .item.cat-ai { color: var(--accent0); }
+  .col:nth-child(1) .ai-badge { background: rgba(80,212,154,0.15); color: var(--accent0); }
+
+  .col:nth-child(2) .item.cat-ai { color: var(--accent1); }
+  .col:nth-child(2) .ai-badge { background: rgba(96,180,255,0.18); color: var(--accent1); }
+
+  .col:nth-child(3) .item.cat-ai { color: var(--accent2); }
+  .col:nth-child(3) .ai-badge { background: rgba(180,142,255,0.18); color: var(--accent2); }
+
+  .col:nth-child(4) .item.cat-ai { color: var(--accent4); }
+  .col:nth-child(4) .ai-badge { background: rgba(255,112,144,0.18); color: var(--accent4); }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    margin-top: 24px;
+    opacity: 0;
+    animation: fadeUp 0.7s ease 0.5s forwards;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .legend-swatch { width: 20px; height: 3px; border-radius: 2px; }
+  .legend-year {
+    margin-left: auto;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #404060;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <div class="header">
+    <h1>Character Workflow <span>Evolution</span></h1>
+    <div class="header-sub">Production Pipeline Reference · 2026</div>
+  </div>
+
+  <div class="progress-row">
+    <div class="prog-seg">
+      <div class="prog-pct">10% AI</div>
+      <div>
+     
+       
+      </div>
+    </div>
+    <div class="prog-seg">
+      <div class="prog-pct">25% AI</div>
+      <div>
+
+  
+      </div>
+    </div>
+    <div class="prog-seg">
+      <div class="prog-pct">50% AI</div>
+      <div>
+ 
+      </div>
+    </div>
+    <div class="prog-seg">
+      <div class="prog-pct">90% AI</div>
+      <div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <div class="col">
+      <div class="col-header">
+        <div class="col-title">Standard 3D</div>
+        <div class="col-tools">Maya / Unreal</div>
+      </div>
+      <div class="items">
+        <div class="item cat-base">Scan / Model</div>
+        <div class="item cat-base">Rig</div>
+        <div class="item cat-base">Mocap</div>
+        <div class="item cat-base">Hair Sim</div>
+        <div class="item cat-base">Cloth Sim</div>
+        <div class="item cat-base">Facial Anim</div>
+        <div class="item cat-base">Full 3D Render &amp; Comp</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>LoRA / AI Enhancement</div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="col-header">
+        <div class="col-title">AI Rendered 3D</div>
+        <div class="col-tools">Unreal + Vid2Vid · Trained AI Layer</div>
+      </div>
+      <div class="items">
+        <div class="item cat-base">Scan / Model</div>
+        <div class="item cat-base">Rig</div>
+        <div class="item cat-base">Mocap</div>
+        <div class="item cat-base">3D Facial Anim</div>
+        <div class="item cat-base">Camera Shots</div>
+        <div class="item cat-base">Basic 3D Render</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>AI Cloth &amp; Sims</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>Face Swap</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>AI Relighting</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>LoRA / AI Enhancement</div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="col-header">
+        <div class="col-title">3D Guided AI</div>
+        <div class="col-tools">Unreal + Wan Animate · LTX-2 · SteadyDancer</div>
+      </div>
+      <div class="items">
+        <div class="item cat-base">Scan / Model</div>
+        <div class="item cat-base">Rig</div>
+        <div class="item cat-base">Mocap</div>
+        <div class="item cat-base">Facial Anim Video Ref</div>
+        <div class="item cat-base">Camera Shots</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>Full Detailed AI Model</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>AI Facial Anim (Video Ref)</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>AI Cloth &amp; Sims</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>Face Swap</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>AI Relighting</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>LoRA / AI Enhancement</div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="col-header">
+        <div class="col-title">Full Video to AI</div>
+        <div class="col-tools">Wan Animate · LTX-2 · SteadyDancer</div>
+      </div>
+      <div class="items">
+        <div class="item cat-base">Character References</div>
+        <div class="item cat-base">Video Performance Ref</div>
+        <div class="item cat-base">Facial Performance Ref</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>Environment Layouts</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>Full Detailed AI Model</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>Latent Consistency Model</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>Audio Based AI Performance</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>Video Based AI Performance</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>Prompted AI Performance</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>Face Swap</div>
+        <div class="item cat-ai"><span class="ai-badge">AI</span>LoRA / AI Enhancement</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:var(--accent0)"></div>
+      Traditional Step
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:var(--accent4)"></div>
+      AI-Driven Step
+    </div>
+    <div class="legend-year">2026 Production Reference</div>
+  </div>
+
+</div>
+</body>
+</html>

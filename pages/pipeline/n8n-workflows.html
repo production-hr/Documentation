@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>n8n Workflow Documentation — Archive</title>
+  <link rel="stylesheet" href="../../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Pipeline</span>
+        <span>2026-05-07</span>
+      </div>
+
+      <h1 class="doc-title">n8n Workflow Documentation</h1>
+
+      <p class="doc-lede">Living reference for image generation and AI pipeline automation workflows — APIs involved, data flow, and step-by-step process for each.</p>
+
+      <article class="prose">
+
+        <ol>
+          <li><a href="#character-sheets">Wavespeed — Character Sheets</a></li>
+          <li><a href="#character-variations">Wavespeed — Character Variations</a></li>
+          <li><a href="#prompt-extractor">JSON Image Prompt Extractor</a></li>
+          <li><a href="#skin-detailing">SkinDetailing API</a></li>
+        </ol>
+
+        <hr>
+
+        <p class="dropcap">Each workflow listed here is a discrete automation unit running in n8n, wired to external APIs and storage services. They share a common pattern: read a queue from Airtable or Google Sheets, submit work to an AI or processing service, poll for completion, store the result, and update the source record. The workflows are documented as-built — including current status, obsolete nodes, and known migration debt.</p>
+
+        <h2 id="character-sheets">1. Wavespeed — Character Sheets</h2>
+
+        <p>Generates character sheet images using the Wavespeed Nano Banana Pro image-editing model. Reads characters with a <code>TO_DO</code> status from Airtable, submits each to Wavespeed for AI image generation at 4K / 21:9, uploads results to Digital Ocean Spaces, and updates the Airtable record with the generated image URL and a <code>REVIEW</code> status. A validation sub-workflow serves a human review page via webhook and handles approval callbacks.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>API / Service</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Airtable API</td>
+              <td>Source of character data (Name, Description, Prompt, IMAGE_Closeup); updated with CharacterSheet_Closeup URL and Status after generation</td>
+            </tr>
+            <tr>
+              <td>Wavespeed API <code>nano-banana-pro/edit</code></td>
+              <td>AI image editing model — generates character sheet images at 4K / 21:9 based on character prompt and close-up reference image</td>
+            </tr>
+            <tr>
+              <td>WaveSpeed Task Status</td>
+              <td>Polls Wavespeed task completion with retry loop (initial 10s wait, 15s retry intervals)</td>
+            </tr>
+            <tr>
+              <td>Digital Ocean Spaces (S3)</td>
+              <td>Output storage — uploads generated PNG to <code>charactersheets</code> bucket under <code>/sheets/</code></td>
+            </tr>
+            <tr>
+              <td>n8n Webhook</td>
+              <td>Serves a validation HTML page to human reviewers; handles DONE / TO_DO submission callbacks</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <ol>
+          <li>Manual trigger → search Airtable for records with <code>Status = TO_DO</code></li>
+          <li>Edit Fields maps Name, Description, Prompt, IMAGE_Closeup</li>
+          <li>Split Into Batches processes records one at a time</li>
+          <li>POST to Wavespeed Nano Banana Pro API with prompt + close-up image</li>
+          <li>Wait 10s → poll WaveSpeed Task Status → check if completed</li>
+          <li>On completion: download image → upload to Digital Ocean Spaces</li>
+          <li>Update Airtable record with CharacterSheet_Closeup URL and <code>Status = REVIEW</code></li>
+          <li>Validation sub-flow: webhook serves HTML review page; reviewer marks DONE or TO_DO; callback updates records</li>
+        </ol>
+
+        <h2 id="character-variations">2. Wavespeed — Character Variations</h2>
+
+        <p>Generates image variations from an existing character reference. Reads records with <code>Status = TO_DO</code> from an Airtable ImageVariations base, calls the Wavespeed Nano Banana Pro API with a custom prompt and original image reference at 2K / 16:9, polls for completion, downloads the result, and stores the variation URL back in Airtable as an attachment.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>API / Service</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Airtable API (ImageVariations base)</td>
+              <td>Source of variation tasks (Prompt + IMAGE_ORIG); updated with IMAGE_VARIATION attachment array and <code>Status = REVIEW</code> on completion</td>
+            </tr>
+            <tr>
+              <td>Wavespeed API <code>nano-banana-pro/edit</code></td>
+              <td>Generates 2K / 16:9 image variations using the original image and text prompt as inputs</td>
+            </tr>
+            <tr>
+              <td>WaveSpeed Task Status</td>
+              <td>Polls task completion; retries every 15 seconds until status = completed</td>
+            </tr>
+            <tr>
+              <td>WaveSpeed Authenticated HTTP</td>
+              <td>Downloads the generated image file using WaveSpeed API credentials</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <ol>
+          <li>Manual trigger → search Airtable PROMPTED_IMAGES table for <code>Status = TO_DO</code></li>
+          <li>Edit Fields maps Prompt and IMAGE_ORIG URL</li>
+          <li>POST to Wavespeed API (16:9, 2K, JPEG output)</li>
+          <li>Wait 20s → poll WaveSpeed Task Status → check if completed</li>
+          <li>On completion: GET result JSON from Wavespeed status URL</li>
+          <li>Code node constructs IMAGE_VARIATION array with output URL</li>
+          <li>Download image via authenticated WaveSpeed HTTP request</li>
+          <li>Update Airtable record with IMAGE_VARIATION attachment and <code>Status = REVIEW</code></li>
+        </ol>
+
+        <h2 id="prompt-extractor">3. JSON Image Prompt Extractor</h2>
+
+        <div class="callout callout--note">
+          Currently reads from Google Sheets. Needs to be ported to Airtable to align with the rest of the character pipeline.
+        </div>
+
+        <p>Analyzes reference images using AI vision models to extract structured image prompts. Reads image URLs with a <code>TODO</code> status from Google Sheets, runs two parallel analysis passes — one producing structured JSON, one producing plain text — and writes both outputs back to the sheet. Useful for reverse-engineering prompts from existing character reference images.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>API / Service</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Google Sheets API (Service Account)</td>
+              <td>Source of image URLs and character names (<code>STATUS = TODO</code>); destination for PROMPT_JSON and PROMPT_TEXT output columns</td>
+            </tr>
+            <tr>
+              <td>Google Gemini 2.5 Flash (LangChain node)</td>
+              <td>Vision analysis: generates structured JSON prompt (Camera, subject, expression, pose, outfit, lighting, props) and plain-text descriptive prompt</td>
+            </tr>
+            <tr>
+              <td>OpenAI GPT-4o (LangChain node)</td>
+              <td>Alternative vision analysis: also produces JSON and plain-text prompts</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <ol>
+          <li>Manual trigger → GET_IMAGES fetches Google Sheets rows where <code>STATUS = TODO</code></li>
+          <li>Gemini analyzes image → returns structured JSON prompt (Camera, subject, expression, pose, outfit, lighting, props)</li>
+          <li>Gemini analyzes image again → returns plain-text descriptive prompt</li>
+          <li>Wait node (0s) acts as flow separator</li>
+          <li>Edit Fields GEMINI maps both outputs with ROWID for sheet matching</li>
+          <li>Update row in Google Sheet with PROMPT_JSON and PROMPT_TEXT columns</li>
+        </ol>
+
+        <h2 id="skin-detailing">4. SkinDetailing API</h2>
+
+        <div class="callout callout--warn">
+          Obsolete. Replaced by inline LoRA detailing passes in the main ComfyUI pipeline. Documented here for reference.
+        </div>
+
+        <p>Applies skin-enhancing AI post-processing to portrait images using a ComfyUI workflow hosted on RunPod as a Docker worker. Fetches an image from Digital Ocean, encodes it, sends it to RunPod for inference, waits for the result, then decodes and returns the processed image. The ComfyUI workflow uses a low-denoise KSampler pass to enhance skin detail without drastically altering the image.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>API / Service</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>RunPod API</td>
+              <td>Runs ComfyUI inference (UNet + VAE + CLIP pipeline) in a Docker worker, billed by usage</td>
+            </tr>
+            <tr>
+              <td>Digital Ocean Spaces</td>
+              <td>Source of the input portrait image (CDN-hosted PNG)</td>
+            </tr>
+            <tr>
+              <td>ComfyUI (via RunPod)</td>
+              <td>UNETLoader <code>z_image_turbo_bf16</code>, VAELoader <code>ae</code>, CLIPLoader <code>qwen_3_4b</code>, KSampler <code>dpmpp_sde / beta / denoise 0.14</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <ol>
+          <li>Trigger → GET image from Digital Ocean CDN</li>
+          <li>Extract filename from URL via JavaScript code node</li>
+          <li>Convert binary image to Base64</li>
+          <li>POST to RunPod with ComfyUI workflow JSON and Base64 image payload</li>
+          <li>Wait 60s → poll RunPod status endpoint</li>
+          <li>Decode Base64 output back to binary</li>
+        </ol>
+
+        <p><strong>Key parameters:</strong> Denoise 0.14 · Steps 8 · CFG 3 · Sampler <code>dpmpp_sde</code> · Scheduler <code>beta</code></p>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-07</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../../assets/js/site.js"></script>
+</body>
+</html>

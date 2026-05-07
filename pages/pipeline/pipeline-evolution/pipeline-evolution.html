@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Digital Humans: 3D to AI Transition — Archive</title>
+  <link rel="stylesheet" href="../../../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../../../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Pipeline Evolution</span>
+        <span>2026-05-07</span>
+      </div>
+
+      <h1 class="doc-title">Digital Humans: 3D to AI Transition</h1>
+
+      <p class="doc-lede">Four integration levels mapping the spectrum from classical 3D production to fully generative AI — each a distinct philosophy of authorship, ownership, and craft.</p>
+
+      <article class="prose">
+
+        <p class="dropcap">In the transition from 3D to AI pipelines, the key is adaptability. Each project — and usually each shot within a project — carries unique constraints and requirements. Some can be fully satisfied by AI; others demand a hybrid approach. What follows is a taxonomy of four integration levels, from AI as a minor post-process pass to AI as the entire production substrate. The levels are not a progression to chase: they are options, each with its own fidelity profile, cost structure, and creative trade-offs.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Level</th>
+              <th>Model</th>
+              <th>AI share</th>
+              <th>Authorship lives in</th>
+              <th>Role of the artist</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Classical 3D</td>
+              <td>~10%</td>
+              <td>Meshes, rigs, keyframes, sims</td>
+              <td>Builder</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>AI-Rendered 3D</td>
+              <td>~25%</td>
+              <td>Motion, framing, timing</td>
+              <td>Animator + visual director</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>3D-Guided AI</td>
+              <td>~50%</td>
+              <td>Intent and constraints</td>
+              <td>Director of emergence</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>Fully AI</td>
+              <td>~90%</td>
+              <td>Design + curation</td>
+              <td>Casting director + showrunner</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="level-1">Level 1 — Classical 3D Production</h2>
+
+        <p><em>AI as post-processing.</em> The traditional pipeline runs intact. AI is a finishing tool applied after the render — denoising, upscaling, minor detail enhancement, cleanup. No part of the core production depends on it.</p>
+
+        <p><strong>What exists:</strong> real geometry, real rigs, real simulations, real lighting, real renders. Every frame is deterministic and fully art-directable at the node level.</p>
+
+        <p><strong>What AI does:</strong> denoising (replacing render-time sample counts), upscaling output resolution, minor texture and detail enhancement in comp, removing render artefacts.</p>
+
+        <div class="callout callout--note">
+          Authorship lives in the mesh, the rig, the keyframe, the shader. The artist is a builder — every visible element was explicitly constructed.
+        </div>
+
+        <h2 id="level-2">Level 2 — AI-Rendered 3D</h2>
+
+        <p><em>3D as structure, AI as renderer.</em> The 3D pipeline provides form and motion. AI replaces most of the visual surface — materials, lighting, hair and cloth detail, and style unification. The render engine produces a structural pass; AI produces the final image.</p>
+
+        <p><strong>What exists:</strong> simplified geometry, coarse rigs, coarse mocap, real camera. The 3D output is intentionally low-fidelity — a skeleton for AI to dress.</p>
+
+        <p><strong>What disappears:</strong> shaders, lighting setups, high-fidelity simulations. These are now AI responsibilities.</p>
+
+        <p><strong>What AI does:</strong> material appearance, lighting, hair and cloth detail, style unification across shots. Face swap enters here — replacing the rendered face with a photoreal AI-driven character identity, avoiding high-fidelity facial rigging entirely.</p>
+
+        <div class="callout callout--note">
+          Authorship lives in motion, framing, timing. The artist directs what happens and where the camera points; AI resolves how it looks.
+        </div>
+
+        <h2 id="level-3">Level 3 — 3D-Guided Generative Animation</h2>
+
+        <p><em>3D as scaffolding.</em> The 3D layer becomes a control signal rather than an output. AI is both the animator and the renderer. The 3D proxy defines spatial constraints — blocking, camera language, rough timing — and AI generates the detailed result from that guidance.</p>
+
+        <p><strong>What exists:</strong> proxy meshes or scans, rough rigs, blocking mocap, camera language. The 3D work is cheap and fast; precision is irrelevant.</p>
+
+        <p><strong>What disappears:</strong> detailed animation curves, facial rigging, secondary motion passes, physical realism requirements.</p>
+
+        <p><strong>What AI does:</strong> facial acting, micro-gestures, cloth and hair behaviour, visual continuity between shots. AI Relighting and Face Swap stabilise the character identity across the generated frames.</p>
+
+        <div class="callout callout--note">
+          Authorship lives in intent and constraints. The artist defines what must happen and what must not; AI fills every gap in between.
+        </div>
+
+        <h2 id="level-4">Level 4 — Fully AI Rendered Production</h2>
+
+        <p><em>Characters as latent identities.</em> No geometry. No simulation. Characters and environments exist only as trained statistical identities, driven by real human performance — video reference, audio, or prompted motion. The render engine is gone.</p>
+
+        <p><strong>What exists:</strong> character identity packs (model sheets, costume references), style and environment concept layouts, performance video or mocap as the motion source.</p>
+
+        <p><strong>What disappears:</strong> meshes, rigs, shaders, physics, render engines. The entire DCC pipeline collapses into model conditioning and generation parameters.</p>
+
+        <p><strong>What AI does:</strong> body, face, acting, lighting, set dressing, inter-shot continuity. Face swap is the primary mechanism for character consistency — ensuring the generated body carries the right face across every shot regardless of generation drift.</p>
+
+        <div class="callout callout--note">
+          Authorship lives in design and curation. The artist is casting director and showrunner — defining identity, approving frames, steering the output without constructing any of it.
+        </div>
+
+        <hr>
+
+        <h2 id="faceswap-example">A Cross-Level Example: Face Swapping</h2>
+
+        <p>Face swapping is a useful lens for the taxonomy because the same task — replacing a face — can be solved at every level within a single project. Different shots demand different approaches; the level is chosen per constraint, not per production.</p>
+
+        <p><strong>Level 1 — 3D head replacement.</strong> When a full AI face swap fails at extreme camera angles or under hard occlusion, the shot is pulled back to the classical pipeline. The head is tracked and replaced with a traditional 3D asset, then refined with an AI pass in comp. Deterministic and fully art-directable; expensive per shot.</p>
+
+        <p><strong>Level 2 — Hair simulation pass.</strong> When a face swap includes moving hair, AI generation alone rarely maintains physically coherent motion. A dedicated pass — either a 3D hair simulation or a targeted AI generation constrained by the swap output — is composited on top. The face is AI-driven; the hair is handled separately.</p>
+
+        <p><strong>Level 3 — Face mask and full AI replacement.</strong> When motion-controlled or generative output drifts on face consistency, a face mask is extracted and a full AI face replacement is applied using a trained model or static identity image. The body and environment remain as generated; only the face region is stabilised.</p>
+
+        <p><strong>Level 4 — Fully generated.</strong> A generated first frame establishes the identity. Face swap is done in the static frame. Audio-driven acting and prompt-guided generation produce the shot end to end. No 3D, no tracked mask — the face is the model.</p>
+
+        <div class="callout">
+          The level chosen for a face swap shot is determined by what fails first: angle, hair, drift, or budget. A single sequence may use all four approaches in different cuts.
+        </div>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../../../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-07</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../../../assets/js/site.js"></script>
+</body>
+</html>

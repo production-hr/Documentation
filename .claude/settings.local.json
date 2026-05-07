@@ -4,7 +4,8 @@
       "Bash(python -c ' *)",
       "Bash(del \"d:\\\\_GITHUB\\\\Documentation\\\\_Sources\\\\ai_models_raw.txt\")",
       "Bash(git remote *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "PowerShell(New-Item -ItemType Directory -Force \"d:\\\\_GITHUB\\\\Documentation\\\\pages\\\\pipeline\\\\pipeline-evolution\")"
     ]
   }
 }
