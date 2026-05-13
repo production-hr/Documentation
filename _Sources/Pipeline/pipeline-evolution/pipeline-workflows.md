@@ -1,0 +1,47 @@
+---
+title: "Character Workflow: Production Matrix"
+section: Pipeline
+subsection: Pipeline Evolution
+category: Overview
+excerpt: Production matrix across four pipeline configurations with face swap integration guide.
+tags: [pipeline, workflow, face-swap, ai, character, matrix]
+updated: 2026-05-07
+---
+
+> lede: Step-by-step production matrix across four pipeline configurations — from classical 3D to fully AI-driven character generation. Traditional steps in muted white; AI-driven steps highlighted in colour.
+
+Each column represents a pipeline philosophy, not a software stack. The steps listed are production responsibilities — some fulfilled by an artist operating a DCC tool, others handed to an AI model operating on trained priors. As the pipeline shifts right, manual construction steps collapse and AI responsibilities expand. Face swap appears at Level 2 and persists through Level 4, serving as the primary identity-anchoring mechanism once 3D facial rigging is no longer viable.
+
+<!-- pipeline-matrix: complex HTML component — edit in HTML directly -->
+
+## Face Swap
+
+Face swap is the process of transplanting a trained character's facial identity onto a body performance animated separately — whether that body comes from a 3D render, a video motion reference, or an AI-generated sequence. It first enters the pipeline at Level 2, where it replaces the need for high-fidelity 3D facial rigging, and becomes progressively more critical at Levels 3 and 4 where generation drift would otherwise destroy inter-shot identity continuity.
+
+## Face Swap by Pipeline Level
+
+**Level 1 — 3D head replacement.** When a full AI face swap fails at extreme camera angles or under hard occlusion, the shot is pulled back to the classical pipeline. The head is tracked and replaced with a traditional 3D asset, then refined with an AI pass in comp. Deterministic and fully art-directable; expensive per shot.
+
+**Level 2 — Hair simulation pass.** When a face swap includes moving hair, AI generation alone rarely maintains physically coherent motion. A dedicated pass — either a 3D hair simulation or a targeted AI generation constrained by the swap output — is composited on top. The face is AI-driven; the hair is handled separately.
+
+**Level 3 — Face mask and full AI replacement.** When motion-controlled or generative output drifts on face consistency, a face mask is extracted and a full AI face replacement is applied using a trained model or static identity image. The body and environment remain as generated; only the face region is stabilised.
+
+**Level 4 — Fully generated.** A generated first frame establishes the identity. Audio-driven acting and prompt-guided generation produce the shot end to end. No 3D, no tracked mask — the face is the model.
+
+> The level chosen for a face swap shot is determined by what fails first: angle, hair, drift, or budget. A single sequence may use all four approaches in different cuts.
+
+## Considerations
+
+**Source face quality.** The quality of the reference photograph is the primary determinant of swap quality. A clean, well-lit, neutral-expression frontal shot of the character face produces the most reliable identity transplant. Poorly lit or low-resolution sources produce muddy results regardless of model.
+
+**Lighting mismatch.** The swapped face inherits the lighting baked into the source reference, which rarely matches the body render's lighting. A relighting pass — AI-based or composited — is almost always required after face swap, which is why AI Relighting appears directly below Face Swap in the production matrix for Levels 2 and 3.
+
+**Temporal consistency on video.** Frame-by-frame face swap can flicker on video output. Running frames in large consistent batches, keeping inference parameters fixed, and applying a temporal smoothing pass in comp reduces this. At Level 4, using a Latent Consistency Model before face swap also helps stabilise the underlying face geometry frame-to-frame.
+
+**Skin tone and colour grading.** The swapped face may carry a different colour profile than the body render. A colour match pass in comp — or routing both through the same LoRA enhancement pass — brings them into alignment before final delivery.
+
+**Hair.** Hair is the most common failure point adjacent to face swap. The swap region boundary typically runs along the hairline, making stray strands, flyaways, and motion blur difficult to blend cleanly. Shots with complex or moving hair should be budgeted for a dedicated hair pass — 3D simulation, AI generation, or manual roto.
+
+**Glasses.** Eyewear interacts badly with face swap in both directions: the source face reference should ideally be shot without glasses, and if the character wears them in the final output they must be added as a separate comp element. Attempting to swap through glasses produces lens reflections baked into the identity and frame distortion at the lens boundary.
+
+**Jewelry.** Earrings, necklaces, and facial piercings that fall within or near the swap region will be inherited from the source reference rather than the target performance. For characters with distinctive jewelry as part of their identity this is often desirable; for characters where it must match the body costume it requires a separate comp pass or exclusion mask.

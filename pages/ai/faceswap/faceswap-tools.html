@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Face Swap Tools — Archive</title>
+  <link rel="stylesheet" href="../../../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../../../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Faceswap</span>
+        <span>2026-05-07</span>
+      </div>
+
+      <h1 class="doc-title">Face Swap Tools</h1>
+
+      <p class="doc-lede">Taxonomy of open-source face swap tools — standalone applications, wrappers, and LoRA-based approaches within ComfyUI.</p>
+
+      <article class="prose">
+
+        <figure class="diagram-wrap">
+          <img src="faceswap-tools.svg" class="diagram-img" alt="Face Swap Tools" />
+        </figure>
+
+        <h2 id="overview">Overview</h2>
+
+        <p class="dropcap">The face swap tool landscape divides into three operational categories. Standalone open-source applications handle the full swap pipeline internally — they are self-contained executables with their own model management and UI. Wrappers sit on top of these applications, adding batch control, API access, or tighter pipeline integration. LoRA-based approaches shift the paradigm entirely: rather than swapping a face post-generation, they condition the generation model on a face identity, producing cleaner results at the cost of additional training setup.</p>
+
+        <h2 id="standalone">Standalone Applications</h2>
+
+        <p><strong>FaceFusion</strong> is the current standard for production face swap. It supports image and video input, multiple face detection backends, and a range of swap and enhancement models. Actively maintained with a web UI and CLI mode for pipeline integration.</p>
+
+        <p><strong>VisoMaster</strong> offers a node-based interface designed for more granular control over the swap process — face selection, masking, and per-region enhancement are all exposed as discrete steps rather than a single operation.</p>
+
+        <p><strong>DeepFaceLab</strong> is the original high-fidelity face swap tool. It requires explicit training on source and target video sets before swapping, which makes it significantly more time-intensive than inference-only tools but produces superior consistency on long-form video when trained correctly.</p>
+
+        <p><strong>FaceSwap</strong> is the open-source counterpart to DeepFaceLab — same training-based approach, different codebase and community. Useful as a reference implementation and for operators already familiar with its workflow.</p>
+
+        <p><strong>LivePortrait</strong> extends face swap into expression transfer: given a source identity and a driving video, it animates the source face to match the expressions and head motion of the driver. Used for generating facial performance from a static reference image rather than replacing a face in existing footage.</p>
+
+        <h2 id="wrappers">Wrappers</h2>
+
+        <p><strong>HyperSwap</strong> is a wrapper layer that integrates face swap functionality into broader production pipelines, adding batch processing, queue management, and API surface on top of underlying swap models. Reduces the manual overhead of running standalone tools across large shot lists.</p>
+
+        <h2 id="lora-based">LoRA-Based (ComfyUI)</h2>
+
+        <p>LoRA-based face swap in ComfyUI conditions the generation model on a face identity rather than replacing a face after generation. A character LoRA trained on the target face is loaded into the Flux or SDXL pipeline via a Load LoRA node; the model generates the character's face directly as part of inference. The result has no hard swap boundary and integrates naturally with lighting and scene — but requires training time per character and is bound to the generation model it was trained against.</p>
+
+        <div class="callout callout--note">
+          For production pipelines, LoRA-based identity is used for image and short-clip generation; inference-only tools (FaceFusion, VisoMaster) are used for video where per-frame swap speed matters more than boundary quality.
+        </div>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../../../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-07</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../../../assets/js/site.js"></script>
+</body>
+</html>

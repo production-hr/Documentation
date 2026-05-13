@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(\\(Get-Content \"d:\\\\_GITHUB\\\\Documentation\\\\assets\\\\css\\\\style.css\"\\).Count)",
+      "PowerShell(Copy-Item \"d:\\\\_GITHUB\\\\Documentation\\\\_Sources\\\\Pipeline\\\\LoraTraining\\\\WanAnimate\\\\Videos\\\\jimm_johnson_W21_LORA_2000s_00001__LORA_LoraStrength_0.0_Seed_3500_00002-audio.mp4\" \"d:\\\\_GITHUB\\\\Documentation\\\\pages\\\\pipeline\\\\lora-training\\\\wan-animate\\\\videos\\\\jimmy-lora-strength-0.mp4\")",
+      "PowerShell(Copy-Item \"d:\\\\_GITHUB\\\\Documentation\\\\_Sources\\\\Pipeline\\\\LoraTraining\\\\WanAnimate\\\\Videos\\\\jimm_johnson_W21_LORA_2000s_00001__LORA_LoraStrength_1.0_Seed_3500_00001-audio.mp4\" \"d:\\\\_GITHUB\\\\Documentation\\\\pages\\\\pipeline\\\\lora-training\\\\wan-animate\\\\videos\\\\jimmy-lora-strength-1.mp4\")"
+    ]
+  }
+}

@@ -91,6 +91,51 @@ See `pages/style-guide.html` for the full inventory: dropcap, lede, headings,
 lists, code (inline + block), blockquotes, tables, callouts (`.callout`,
 `.callout--warn`, `.callout--note`), horizontal rules, dark mode (automatic).
 
+## Markdown authoring workflow
+
+Pages are authored in Markdown and published to HTML. The `_Sources/` folder mirrors the `pages/` folder structure:
+
+```
+_Sources/pipeline/rd-tools.md          →  pages/pipeline/rd-tools.html
+_Sources/ai/faceswap/faceswap-tools.md →  pages/ai/faceswap/faceswap-tools.html
+```
+
+### Frontmatter
+
+Every `.md` file opens with YAML frontmatter carrying the same fields as `docs.json`:
+
+```yaml
+---
+title: Page Title
+section: Pipeline
+subsection: Pipeline Evolution   # omit if no subsection
+category: Overview               # omit if no category
+excerpt: One-sentence description.
+tags: [tag1, tag2]
+updated: 2026-05-07
+---
+```
+
+### Special syntax
+
+| Markdown | Renders as |
+|----------|------------|
+| `> lede: text` | `<p class="doc-lede">` |
+| First paragraph of body | `<p class="dropcap">` (automatic) |
+| `> text` | `<div class="callout">` |
+| `> **Note:** text` | `<div class="callout callout--note">` |
+| `> **Warning:** text` | `<div class="callout callout--warn">` |
+| `![alt](file.svg)` | `<figure class="diagram-wrap"><img class="diagram-img">` |
+| `---` | `<hr>` |
+| Standard tables, lists, code | Direct HTML equivalents |
+
+### When asked to "publish"
+
+1. Read the `.md` source file
+2. Convert to HTML using the rules above, matching the existing page structure
+3. Update `docs.json` if frontmatter fields changed
+4. The pipeline-matrix component in `pipeline-workflows.md` is marked with a comment — preserve the existing HTML for that block
+
 ## What NOT to do
 
 - Don't add inline styles. Extend `style.css` instead.

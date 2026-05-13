@@ -23,3 +23,7 @@ This list covers some of the production tools that need to be developed for the 
 # Model management. 
 
 A server that can run all the production models, update them and serve the resulting video. Needs to have documentation of what is running, model versions used, compatibility.
+
+# Generation database.
+
+A database that tracks every generation used in a project, with full model, sources, prompt and seed logging. This is needed in case we need to reproduce the same shot in the future.

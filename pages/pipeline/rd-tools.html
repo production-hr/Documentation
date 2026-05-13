@@ -34,6 +34,7 @@
           <li><a href="#character-loras">Character LoRAs</a></li>
           <li><a href="#face-replacement">Face Replacement and Detailing</a></li>
           <li><a href="#model-management">Model Management</a></li>
+          <li><a href="#generation-database">Generation Database</a></li>
         </ol>
 
         <hr>
@@ -83,7 +84,7 @@
 
         <h2 id="character-loras">2. Character LoRAs</h2>
 
-        <p>Each character requires a dedicated LoRA per generation model in active use. A LoRA trained for Wan is not portable to LTX-2 or Flux; as the model roster evolves, the LoRA library must be maintained in parallel. The system needs to track which LoRA version corresponds to which model version, flag when a base model update invalidates an existing LoRA, and queue retraining automatically.</p>
+        <p>Each character requires a dedicated LoRA per generation model in active use. A LoRA trained for Wan is not portable to LTX-2 or Flux; as the model roster evolves, the LoRA library must be maintained in parallel. The system needs to track which LoRA version corresponds to which model version, flag when a base model update invalidates an existing LoRA, and queue retraining automatically. An automated LoRA trainer handles this: it pulls the training set from the character database and produces LoRAs for each model in active use on the project, removing the manual retraining step whenever the model roster changes.</p>
 
         <p>Beyond the character LoRA, a second layer of detailing LoRAs handles consistency for elements that fall outside the face region or drift under generation:</p>
 
@@ -127,11 +128,33 @@
           Model version drift is the primary source of shot inconsistency in long-form production. A shot generated in week two with a different model version than a shot generated in week six will not match, regardless of prompt or LoRA. Version locking and documentation are not optional.
         </div>
 
+        <h2 id="generation-database">5. Generation Database</h2>
+
+        <p>Every generation used in a production needs to be traceable. A shot approved today may need to be reproduced in six months — same character, same lighting, same motion — and without a complete record of the model version, source images, prompt, and seed used to produce it, that reproduction is impossible. The generation database is the audit trail for the entire AI production output.</p>
+
+        <p>Required fields per generation record:</p>
+
+        <ul>
+          <li>Shot or asset identifier — links the generation back to the production schedule</li>
+          <li>Model name and version — exact checkpoint, including quantisation format if applicable</li>
+          <li>LoRA stack — all LoRAs applied, with weights</li>
+          <li>Source inputs — reference images, control images, face swap source</li>
+          <li>Prompt — full positive and negative prompt text</li>
+          <li>Seed — the exact seed used; without this, reproduction is not deterministic</li>
+          <li>Inference parameters — steps, CFG, sampler, scheduler, denoise strength</li>
+          <li>Output location — storage path or URL of the generated file</li>
+          <li>Generation date and operator</li>
+        </ul>
+
+        <div class="callout callout--note">
+          Prompt and seed alone are not sufficient for reproduction. Model version drift means the same prompt and seed on a different checkpoint version will produce a different result. All fields are required.
+        </div>
+
       </article>
 
       <footer class="doc-footer">
         <span><a href="../../index.html">← Back to index</a></span>
-        <span>Last updated: 2026-05-07</span>
+        <span>Last updated: 2026-05-08</span>
       </footer>
     </main>
   </div>

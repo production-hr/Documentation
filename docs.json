@@ -11,7 +11,30 @@
       "file": "pages/pipeline/rd-tools.html",
       "excerpt": "Custom tooling for the AI character pipeline — identity database, LoRA infrastructure, face replacement, and model management.",
       "tags": ["pipeline", "rd", "lora", "character", "identity", "face-swap", "model-management"],
-      "updated": "2026-05-07"
+      "updated": "2026-05-08"
+    },
+    {
+      "id": "lora-training",
+      "title": "LoRA Training Pipeline",
+      "section": "Pipeline",
+      "subsection": "LoRA Training",
+      "category": "Overview",
+      "file": "pages/pipeline/lora-training/lora-training.html",
+      "excerpt": "Living document on LoRA training workflows for WAN 2.1, WAN 2.2 variants, WAN SCAIL, and LTX 2.3.",
+      "tags": ["pipeline", "lora", "training", "wan", "ltx", "character", "video"],
+      "updated": "2026-05-12"
+    },
+    {
+      "id": "wan-animate-lora",
+      "title": "WAN 2.2 Animate — LoRA Training",
+      "section": "Pipeline",
+      "subsection": "LoRA Training",
+      "category": "WAN 2.2 Animate",
+      "file": "pages/pipeline/lora-training/wan-animate/wan-animate.html",
+      "excerpt": "LoRA training workflow, parameters, and strength comparison reference for WAN 2.2 Animate.",
+      "tags": ["pipeline", "lora", "training", "wan", "animate", "character", "video"],
+      "updated": "2026-05-12"
+
     },
     {
       "id": "n8n-workflows",
@@ -61,6 +84,28 @@
       "excerpt": "Reference page showing every typographic and structural element available.",
       "tags": ["reference", "design"],
       "updated": "2026-05-05"
+    },
+    {
+      "id": "commercial-tools",
+      "title": "Commercial AI Tools",
+      "section": "AI",
+      "subsection": "Commercial Tools",
+      "category": "Overview",
+      "file": "pages/ai/commercial-tools/commercial-tools.html",
+      "excerpt": "Reference map of commercial AI tools across image generation, video, lip sync, and upscaling.",
+      "tags": ["ai", "commercial", "midjourney", "runway", "kling", "sora", "heygen", "topaz"],
+      "updated": "2026-05-07"
+    },
+    {
+      "id": "faceswap-tools",
+      "title": "Face Swap Tools",
+      "section": "AI",
+      "subsection": "Faceswap",
+      "category": "Overview",
+      "file": "pages/ai/faceswap/faceswap-tools.html",
+      "excerpt": "Taxonomy of open-source face swap tools — standalone applications, wrappers, and LoRA-based approaches.",
+      "tags": ["faceswap", "facefusion", "visomaster", "deepfacelab", "liveportrait", "lora", "ai"],
+      "updated": "2026-05-07"
     },
     {
       "id": "comfyui-character-workflows",

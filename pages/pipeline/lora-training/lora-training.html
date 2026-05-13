@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LoRA Training Pipeline — Archive</title>
+  <link rel="stylesheet" href="../../../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../../../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Pipeline · LoRA Training</span>
+        <span>2026-05-12</span>
+      </div>
+
+      <h1 class="doc-title">LoRA Training Pipeline</h1>
+
+      <p class="doc-lede">Living document on the development of LoRA training workflows for the video models in active production use.</p>
+
+      <article class="prose">
+
+        <ol>
+          <li><a href="#objectives">Training Objectives</a></li>
+          <li><a href="#models">Target Models</a></li>
+          <li><a href="#wan-21">WAN 2.1</a></li>
+          <li><a href="#wan-22-vace">WAN 2.2 VACE</a></li>
+          <li><a href="#wan-22-fun">WAN 2.2 Fun Control</a></li>
+          <li><a href="#wan-22-animate">WAN 2.2 Animate</a></li>
+          <li><a href="#wan-scail">WAN SCAIL</a></li>
+          <li><a href="#ltx">LTX 2.3</a></li>
+        </ol>
+
+        <hr>
+
+        <p class="dropcap">This document tracks the ongoing development of the LoRA training pipeline for the video models in active use on the production. LoRAs are trained per model — a LoRA built for WAN 2.1 is not portable to LTX 2.3 or any WAN 2.2 variant. As the model roster evolves and base models are updated, the LoRA library must be maintained in parallel. This document records the training approach, dataset requirements, and current status for each model family.</p>
+
+        <h2 id="objectives">Training Objectives</h2>
+
+        <p>LoRAs are trained to address specific consistency and quality gaps that the base video models do not solve reliably at production scale. The training program covers six areas:</p>
+
+        <ul>
+          <li><strong>Character consistency</strong> — anchoring identity across shots, angles, and lighting conditions</li>
+          <li><strong>Character detailing</strong> — recovering fine facial and body detail that generation or face swap passes lose</li>
+          <li><strong>Hyper-realistic output</strong> — pushing skin texture, lighting response, and material definition beyond the base model default</li>
+          <li><strong>Cloth simulation</strong> — maintaining fabric behaviour, wrinkle patterns, and garment silhouette across motion</li>
+          <li><strong>Hair simulation</strong> — style, colour, and motion behaviour specific to each character</li>
+          <li><strong>Props and accessories</strong> — gloves, hats, jewelry, and other identity-critical items that frequently drift or disappear under generation</li>
+        </ul>
+
+        <h2 id="models">Target Models</h2>
+
+        <p>LoRAs are currently being developed for the following video models. Each model family requires its own training run; there is no cross-compatibility between families or between major version increments.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Type</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>WAN 2.1</td>
+              <td>Text-to-video / Image-to-video</td>
+              <td>In development</td>
+            </tr>
+            <tr>
+              <td>WAN 2.2 VACE</td>
+              <td>Video editing and consistency</td>
+              <td>In development</td>
+            </tr>
+            <tr>
+              <td>WAN 2.2 Fun Control</td>
+              <td>Controllable generation</td>
+              <td>In development</td>
+            </tr>
+            <tr>
+              <td>WAN 2.2 Animate</td>
+              <td>Character animation</td>
+              <td>In development</td>
+            </tr>
+            <tr>
+              <td>WAN SCAIL</td>
+              <td>Upscaling and enhancement</td>
+              <td>In development</td>
+            </tr>
+            <tr>
+              <td>LTX 2.3</td>
+              <td>Text-to-video / Image-to-video</td>
+              <td>In development</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <hr>
+
+        <h2 id="wan-21">WAN 2.1</h2>
+
+        <div class="callout callout--note">
+          This section is in progress.
+        </div>
+
+        <h2 id="wan-22-vace">WAN 2.2 VACE</h2>
+
+        <div class="callout callout--note">
+          This section is in progress.
+        </div>
+
+        <h2 id="wan-22-fun">WAN 2.2 Fun Control</h2>
+
+        <div class="callout callout--note">
+          This section is in progress.
+        </div>
+
+        <h2 id="wan-22-animate">WAN 2.2 Animate</h2>
+
+        <div class="callout callout--note">
+          This section is in progress.
+        </div>
+
+        <h2 id="wan-scail">WAN SCAIL</h2>
+
+        <div class="callout callout--note">
+          This section is in progress.
+        </div>
+
+        <h2 id="ltx">LTX 2.3</h2>
+
+        <div class="callout callout--note">
+          This section is in progress.
+        </div>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../../../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-12</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../../../assets/js/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WAN 2.2 Animate — LoRA Training — Archive</title>
+  <link rel="stylesheet" href="../../../../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../../../../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Pipeline · LoRA Training</span>
+        <span>2026-05-12</span>
+      </div>
+
+      <h1 class="doc-title">WAN 2.2 Animate — LoRA Training</h1>
+
+      <p class="doc-lede">LoRA training workflow, parameters, and reference outputs for the WAN 2.2 Animate video model.</p>
+
+      <article class="prose">
+
+        <ol>
+          <li><a href="#workflow">Workflow</a></li>
+          <li><a href="#reference">Reference: LoRA Strength Comparison</a></li>
+        </ol>
+
+        <hr>
+
+        <p class="dropcap">WAN 2.2 Animate is the character animation variant of the WAN 2.2 family, optimised for human motion and expressive performance across short-to-medium clips. LoRAs trained on this model anchor character identity through animation passes — maintaining face, costume, and expression consistency without requiring a face swap pass on every shot. This document records the training approach, workflow, and reference outputs for the WAN 2.2 Animate LoRA pipeline.</p>
+
+        <div class="callout callout--note">
+          <strong>WAN 2.2 Animate generates at 16 fps natively.</strong> Workarounds for higher frame rates:
+          <ul>
+            <li><strong>RIFE or FILM interpolation post-pass</strong> — outputs at 32, 48, or 60 fps. Standard practice; results are clean for most motion.</li>
+            <li><strong>GIMM-VFI</strong> — newer interpolator, better than RIFE on large or complex motion.</li>
+            <li>ComfyUI nodes available for all three via the ComfyUI-Frame-Interpolation pack.</li>
+          </ul>
+        </div>
+
+        <h2 id="workflow">Workflow</h2>
+
+        <p>The ComfyUI workflow below is the native training and inference configuration for WAN 2.2 Animate LoRA development. It handles dataset loading, training parameters, and the test inference pass used to evaluate LoRA strength.</p>
+
+        <a class="download-link" href="HR_WanAnimate_native_example_01.json" download>
+          ↓ HR_WanAnimate_native_example_01.json
+        </a>
+
+        <h2 id="reference">Reference: LoRA Strength Comparison</h2>
+
+        <p>Each pair below shows the same generation at seed 3500 with LoRA strength at <code>0.0</code> (base model, no LoRA influence) and <code>1.0</code> (full LoRA weight). The comparison establishes the identity delta the LoRA introduces and validates that training has not degraded motion quality or temporal consistency.</p>
+
+        <p><strong>Ozzy Osbourne</strong></p>
+        <div class="video-compare">
+          <div class="video-compare__item">
+            <video controls preload="metadata">
+              <source src="videos/lora-strength-0.mp4" type="video/mp4" />
+            </video>
+            <div class="video-compare__label">LoRA strength 0.0 — base model</div>
+          </div>
+          <div class="video-compare__item">
+            <video controls preload="metadata">
+              <source src="videos/lora-strength-1.mp4" type="video/mp4" />
+            </video>
+            <div class="video-compare__label">LoRA strength 1.0 — full LoRA</div>
+          </div>
+        </div>
+
+        <p><strong>Jimmy Johnson</strong></p>
+        <div class="video-compare">
+          <div class="video-compare__item">
+            <video controls preload="metadata">
+              <source src="videos/jimmy-lora-strength-0.mp4" type="video/mp4" />
+            </video>
+            <div class="video-compare__label">LoRA strength 0.0 — base model</div>
+          </div>
+          <div class="video-compare__item">
+            <video controls preload="metadata">
+              <source src="videos/jimmy-lora-strength-1.mp4" type="video/mp4" />
+            </video>
+            <div class="video-compare__label">LoRA strength 1.0 — full LoRA</div>
+          </div>
+        </div>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../../../../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-12</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../../../../assets/js/site.js"></script>
+</body>
+</html>

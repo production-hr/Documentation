@@ -302,19 +302,28 @@
         subs[d.subsection]++;
       }
     });
-    var html = order.map(function (sub) {
-      var count = subs[sub];
-      return '<a class="doc-card doc-card--nav" href="#' + enc(section) + '/' + enc(sub) + '">' +
-             '<div class="doc-card__title">' + escapeHtml(sub) + '</div>' +
-             '<div class="doc-card__excerpt">' + count + (count === 1 ? ' document' : ' documents') + '</div>' +
-             '</a>';
-    }).join('');
-    html += directDocs.map(function (d) {
-      return '<a class="doc-card" href="' + escapeAttr(d.file) + '">' +
-             '<div class="doc-card__title">' + escapeHtml(d.title) + '</div>' +
-             '<div class="doc-card__excerpt">' + escapeHtml(d.excerpt || '') + '</div>' +
-             '</a>';
-    }).join('');
+    var html = '';
+    if (order.length > 0) {
+      html += '<div class="index-row index-row--nav">' +
+              order.map(function (sub) {
+                var count = subs[sub];
+                return '<a class="doc-card doc-card--nav" href="#' + enc(section) + '/' + enc(sub) + '">' +
+                       '<div class="doc-card__title">' + escapeHtml(sub) + '</div>' +
+                       '<div class="doc-card__excerpt">' + count + (count === 1 ? ' document' : ' documents') + '</div>' +
+                       '</a>';
+              }).join('') +
+              '</div>';
+    }
+    if (directDocs.length > 0) {
+      html += '<div class="index-row index-row--docs">' +
+              directDocs.map(function (d) {
+                return '<a class="doc-card" href="' + escapeAttr(d.file) + '">' +
+                       '<div class="doc-card__title">' + escapeHtml(d.title) + '</div>' +
+                       '<div class="doc-card__excerpt">' + escapeHtml(d.excerpt || '') + '</div>' +
+                       '</a>';
+              }).join('') +
+              '</div>';
+    }
     grid.innerHTML = html;
   }
 

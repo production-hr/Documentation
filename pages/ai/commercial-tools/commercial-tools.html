@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Commercial AI Tools — Archive</title>
+  <link rel="stylesheet" href="../../../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../../../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Commercial Tools</span>
+        <span>2026-05-07</span>
+      </div>
+
+      <h1 class="doc-title">Commercial AI Tools</h1>
+
+      <p class="doc-lede">Reference map of commercial AI tools in active use across image generation, video production, lip sync, and upscaling.</p>
+
+      <article class="prose">
+
+        <p class="dropcap">Commercial tools occupy a different role in the pipeline than open-source infrastructure. They are accessed via API or subscription, require no local hardware, and are typically updated continuously by their providers. The trade-off is cost at scale, dependency on external services, and less control over model versioning. The tools listed here are those with a proven production record — fast enough to use in volume, reliable enough to depend on for deliverables.</p>
+
+        <figure class="diagram-wrap">
+          <img src="commercial-tools.svg" class="diagram-img" alt="Commercial AI Tools map" />
+        </figure>
+
+        <h2 id="image">Image Generation</h2>
+
+        <p><strong><a href="https://www.midjourney.com" target="_blank" rel="noopener">Midjourney</a></strong> is the current benchmark for commercial image quality. Operates via Discord and a web interface; no local install required. Excels at stylised, editorial, and character reference imagery. Prompt-driven with strong aesthetic coherence across generations. The go-to for concept art, character sheets, and mood boards where photorealism is not the primary goal.</p>
+
+        <p><strong><a href="https://labs.google/fx/tools/image-fx" target="_blank" rel="noopener">ImageFX</a></strong> is Google's consumer-facing image generation tool, powered by Imagen. Strong photorealistic output with good prompt adherence. Useful as a fast alternative to Midjourney for reference images and as a secondary generation pass when diversity of output matters.</p>
+
+        <h2 id="video">Video Generation</h2>
+
+        <p><strong><a href="https://sora.com" target="_blank" rel="noopener">Sora</a></strong> is OpenAI's video generation model. Produces high-quality, physically coherent video from text and image prompts. Particularly strong on camera motion, lighting behaviour, and scene consistency over longer clips. Access is via subscription.</p>
+
+        <p><strong><a href="https://klingai.com" target="_blank" rel="noopener">Kling</a></strong> is Kuaishou's video generation model. Competitive with Sora on character motion and face consistency; notable for its image-to-video performance using a reference frame as the identity anchor. Widely used for character animation work.</p>
+
+        <p><strong><a href="https://runwayml.com" target="_blank" rel="noopener">Runway</a></strong> is a video generation and editing platform with a broad toolset — text-to-video, image-to-video, inpainting, motion brush, and Act-One for performance capture. Strong API and integrations make it pipeline-friendly. Gen-3 Alpha is the current production model.</p>
+
+        <p><strong><a href="https://deepmind.google/models/veo/" target="_blank" rel="noopener">Veo 3</a></strong> is Google DeepMind's video generation model. Produces high-resolution, long-duration video with strong temporal consistency. Available via Vertex AI and Google Labs products. Competitive on cinematic realism and prompt-to-motion fidelity.</p>
+
+        <p><strong><a href="https://www.seedance.ai" target="_blank" rel="noopener">Seedance 2</a></strong> is ByteDance's video generation model. Strong performance on human motion and character consistency across cuts. Integrated into CapCut's commercial tooling; also accessible via API.</p>
+
+        <p><strong><a href="https://pika.art" target="_blank" rel="noopener">Pika Labs</a></strong> offers text-to-video and image-to-video generation with a focus on fast iteration and creative control. Notable for its effects pipeline — modifications to specific objects or regions within a video — and for accessible pricing at lower volumes.</p>
+
+        <h2 id="lipsync">Lip Sync</h2>
+
+        <p><strong><a href="https://www.heygen.com" target="_blank" rel="noopener">HeyGen</a></strong> is the production standard for AI-driven lip sync and avatar video. Given a portrait and an audio track, it generates a talking-head video with accurate lip movement and natural expression. Used for character dialogue, localisation dubbing, and presenter video at scale. Strong API support.</p>
+
+        <p><strong>LipDub</strong> handles audio-driven lip sync as a compositing pass — applying generated lip movement onto existing footage rather than generating a full avatar video. Used when the body performance already exists and only the mouth region needs to be driven by a new audio track.</p>
+
+        <h2 id="upscale">Upscaling</h2>
+
+        <p><strong><a href="https://www.topazlabs.com" target="_blank" rel="noopener">Topaz</a></strong> produces the best-quality AI upscaling currently available for both photo and video. Topaz Photo AI and Topaz Video AI handle resolution enhancement, noise reduction, motion deblur, and frame interpolation. A standard final-pass tool for any AI-generated output before delivery.</p>
+
+        <p><strong><a href="https://www.blackmagicdesign.com/products/davinciresolve" target="_blank" rel="noopener">DaVinci Resolve</a></strong> includes Super Scale, an AI-based upscaling feature built into the colour and delivery pipeline. Useful for upscaling within an existing Resolve workflow without routing files through a separate application. Less aggressive than Topaz but faster when working inside Resolve on full timelines.</p>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../../../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-07</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../../../assets/js/site.js"></script>
+</body>
+</html>
