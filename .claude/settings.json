@@ -3,7 +3,11 @@
     "allow": [
       "PowerShell(\\(Get-Content \"d:\\\\_GITHUB\\\\Documentation\\\\assets\\\\css\\\\style.css\"\\).Count)",
       "PowerShell(Copy-Item \"d:\\\\_GITHUB\\\\Documentation\\\\_Sources\\\\Pipeline\\\\LoraTraining\\\\WanAnimate\\\\Videos\\\\jimm_johnson_W21_LORA_2000s_00001__LORA_LoraStrength_0.0_Seed_3500_00002-audio.mp4\" \"d:\\\\_GITHUB\\\\Documentation\\\\pages\\\\pipeline\\\\lora-training\\\\wan-animate\\\\videos\\\\jimmy-lora-strength-0.mp4\")",
-      "PowerShell(Copy-Item \"d:\\\\_GITHUB\\\\Documentation\\\\_Sources\\\\Pipeline\\\\LoraTraining\\\\WanAnimate\\\\Videos\\\\jimm_johnson_W21_LORA_2000s_00001__LORA_LoraStrength_1.0_Seed_3500_00001-audio.mp4\" \"d:\\\\_GITHUB\\\\Documentation\\\\pages\\\\pipeline\\\\lora-training\\\\wan-animate\\\\videos\\\\jimmy-lora-strength-1.mp4\")"
+      "PowerShell(Copy-Item \"d:\\\\_GITHUB\\\\Documentation\\\\_Sources\\\\Pipeline\\\\LoraTraining\\\\WanAnimate\\\\Videos\\\\jimm_johnson_W21_LORA_2000s_00001__LORA_LoraStrength_1.0_Seed_3500_00001-audio.mp4\" \"d:\\\\_GITHUB\\\\Documentation\\\\pages\\\\pipeline\\\\lora-training\\\\wan-animate\\\\videos\\\\jimmy-lora-strength-1.mp4\")",
+      "Bash(New-Item -ItemType Directory -Force \"d:\\\\_GITHUB\\\\Documentation\\\\pages\\\\pipeline\\\\lora-training\\\\ltx-23\\\\videos\")",
+      "Bash(Out-Null)",
+      "Bash(Copy-Item 'd:\\\\_GITHUB\\\\Documentation\\\\_Sources\\\\Pipeline\\\\LoraTraining\\\\LTX_23\\\\Videos\\\\LTX23_I2V_Lora.mp4' 'd:\\\\_GITHUB\\\\Documentation\\\\pages\\\\pipeline\\\\lora-training\\\\ltx-23\\\\videos\" *)",
+      "Bash(Copy-Item 'd:\\\\_GITHUB\\\\Documentation\\\\_Sources\\\\Pipeline\\\\LoraTraining\\\\LTX_23\\\\workflows\\\\HR_LTX-23_V2V_Detailer_19bdev.json' 'd:\\\\_GITHUB\\\\Documentation\\\\pages\\\\pipeline\\\\lora-training\\\\ltx-23\" *)"
     ]
   }
 }

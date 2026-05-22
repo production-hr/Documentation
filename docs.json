@@ -14,17 +14,6 @@
       "updated": "2026-05-08"
     },
     {
-      "id": "lora-training",
-      "title": "LoRA Training Pipeline",
-      "section": "Pipeline",
-      "subsection": "LoRA Training",
-      "category": "Overview",
-      "file": "pages/pipeline/lora-training/lora-training.html",
-      "excerpt": "Living document on LoRA training workflows for WAN 2.1, WAN 2.2 variants, WAN SCAIL, and LTX 2.3.",
-      "tags": ["pipeline", "lora", "training", "wan", "ltx", "character", "video"],
-      "updated": "2026-05-12"
-    },
-    {
       "id": "wan-animate-lora",
       "title": "WAN 2.2 Animate — LoRA Training",
       "section": "Pipeline",
@@ -34,7 +23,28 @@
       "excerpt": "LoRA training workflow, parameters, and strength comparison reference for WAN 2.2 Animate.",
       "tags": ["pipeline", "lora", "training", "wan", "animate", "character", "video"],
       "updated": "2026-05-12"
-
+    },
+    {
+      "id": "ltx-23-lora",
+      "title": "LTX 2.3 LoRA Training",
+      "section": "Pipeline",
+      "subsection": "LoRA Training",
+      "category": "LTX 2.3",
+      "file": "pages/pipeline/lora-training/ltx-23/ltx-23.html",
+      "excerpt": "LoRA training on synthetic data for LTX 2.3, covering I2V and V2V inference.",
+      "tags": ["pipeline", "lora", "training", "ltx", "character", "video", "i2v", "v2v"],
+      "updated": "2026-05-22"
+    },
+    {
+      "id": "lora-training",
+      "title": "LoRA Training Pipeline",
+      "section": "Pipeline",
+      "subsection": "LoRA Training",
+      "category": "Overview",
+      "file": "pages/pipeline/lora-training/lora-training.html",
+      "excerpt": "Living document on LoRA training workflows for WAN 2.1, WAN 2.2 variants, WAN SCAIL, and LTX 2.3.",
+      "tags": ["pipeline", "lora", "training", "wan", "ltx", "character", "video"],
+      "updated": "2026-05-22"
     },
     {
       "id": "n8n-workflows",

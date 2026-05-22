@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LTX 2.3 LoRA Training — LoRA Training — Archive</title>
+  <link rel="stylesheet" href="../../../../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../../../../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Pipeline · LoRA Training</span>
+        <span>2026-05-22</span>
+      </div>
+
+      <h1 class="doc-title">LTX 2.3 LoRA Training</h1>
+
+      <p class="doc-lede">Three LoRA-based workflows for LTX 2.3: Image-to-Video, Video-to-Video refinement, and performance-driven generation via ICLoRA.</p>
+
+      <article class="prose">
+
+        <ol>
+          <li><a href="#i2v">Image to Video — Audio Driven</a></li>
+          <li><a href="#v2v">Video to Video</a></li>
+          <li><a href="#iclora">Performance Driven Video — ICLoRA</a></li>
+        </ol>
+
+        <hr>
+
+        <p class="dropcap">For LTX 2.3, identity LoRAs were trained on synthetic data — a collection covering different expressions, camera angles, and generated performance stills across varied setups, wardrobe, and lighting conditions. Training was run on fal.ai at step counts of 1500, 1750, and 2000. The model supports three distinct workflows: audio-driven Image-to-Video generation, a Video-to-Video identity refinement pass, and performance-driven generation using ICLoRA as a ControlNet substitute.</p>
+
+        <div class="callout callout--note">
+          <strong>Training location:</strong> Trained LoRA weights are stored at <code>M:\HyperProductions\hypermodels\Ozzy\08_AI\_LORAS\LTX_2.3</code>.
+        </div>
+
+        <h2 id="i2v">Image to Video — Audio Driven</h2>
+
+        <p>The Image-to-Video pass uses an audio signal to drive expression and head motion. The LoRA engages from the first frame, anchoring character identity throughout the clip rather than drifting toward a base-model average over time.</p>
+
+        <video controls preload="metadata" style="width:100%;">
+          <source src="videos/LTX23_I2V_Lora.mp4" type="video/mp4" />
+        </video>
+
+        <a class="download-link" href="HR_LTX-23_I2V_LORA.json" download>
+          ↓ HR_LTX-23_I2V_LORA.json
+        </a>
+
+        <h2 id="v2v">Video to Video</h2>
+
+        <p>This workflow works as an identity refiner and detailer on existing videos — re-rendering input footage through the LoRA to sharpen likeness and recover detail. In this example the pass is applied to a static 3D model capture.</p>
+
+        <video controls preload="metadata" style="width:100%;">
+          <source src="videos/LTX23_V2V_LORA.mp4" type="video/mp4" />
+        </video>
+
+        <a class="download-link" href="HR_LTX-23_V2V_-LORA_Detailer_19bdev.json" download>
+          ↓ HR_LTX-23_V2V_-LORA_Detailer_19bdev.json
+        </a>
+
+        <h2 id="iclora">Performance Driven Video — ICLoRA</h2>
+
+        <p>LTX 2.3 has no native ControlNet support, but ICLoRA provides equivalent guidance. It accepts depth maps, Canny edges, OpenPose skeletons, or a combination of signals to drive performance while the identity LoRA holds character likeness. The result is controllable performance generation without a separate ControlNet model.</p>
+
+        <video controls preload="metadata" style="width:100%;">
+          <source src="videos/LTX23_ICLORA_CONTROL_ID_LORA.mp4" type="video/mp4" />
+        </video>
+
+        <a class="download-link" href="HR_LTX-2.3_ICLoRA_Union_Control_Distilled_Audio_V02.json" download>
+          ↓ HR_LTX-2.3_ICLoRA_Union_Control_Distilled_Audio_V02.json
+        </a>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../../../../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-05-22</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../../../../assets/js/site.js"></script>
+</body>
+</html>

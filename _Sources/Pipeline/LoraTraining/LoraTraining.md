@@ -15,3 +15,5 @@ It's based on the following open source models:
 - WAN 2.2 Animate
 - WAN SCAIL
 - LTX 2.3
+
+
