@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ozzy Osbourne — Archive</title>
+  <link rel="stylesheet" href="../../../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../../../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>Projects · Ozzy</span>
+        <span>2026-09-17</span>
+      </div>
+
+      <h1 class="doc-title">Ozzy Osbourne</h1>
+
+      <p class="doc-lede">Post-mortem on the Ozzy documentary sequences — what was proposed, which approaches failed, and what shipped.</p>
+
+      <article class="prose">
+
+        <ol>
+          <li><a href="#interactive-avatar">Ozzy Interactive Avatar</a></li>
+          <li><a href="#video-sequences">Ozzy Video Sequences</a></li>
+          <li><a href="#tech-stack">Tech Stack</a></li>
+          <li><a href="#pipeline">Pipeline</a></li>
+        </ol>
+
+        <hr>
+
+        <p class="dropcap">Two video sequences were proposed for the Ozzy documentary — an intro and an outro, both showing an older Ozzy after his death, commenting on the contents of the film. Getting there meant discarding two generation approaches before landing on the one that worked, and adding a second refinement pass on top of it. This post-mortem records the approaches tried, the issues that survived into delivery, and the stack that produced the final shots.</p>
+
+        <h2 id="interactive-avatar">Ozzy Interactive Avatar</h2>
+
+        <div class="callout callout--note">
+          <strong>Section pending.</strong> The source outline lists this section but carries no content yet.
+        </div>
+
+        <h2 id="video-sequences">Ozzy Video Sequences</h2>
+
+        <p>Two different sequences were proposed for inclusion in the Ozzy documentary: one intro and one outro. Both showed an old Ozzy after his death, commenting on the contents of the documentary.</p>
+
+        <h3>Intro</h3>
+
+        <p>In the intro, Ozzy reflected on the concert — how it was proposed and staged close to the house he grew up in. The first version ran very long and was cut down to just under a minute.</p>
+
+        <h3>Outro</h3>
+
+        <p>In the outro, Ozzy commented on the concert, joked about it, and said goodbye from the afterlife. Again, it was cut from a starting duration of several minutes down to two phrases.</p>
+
+        <h3>Production</h3>
+
+        <p>Several approaches were made before one was accepted.</p>
+
+        <h4>1. Video to video</h4>
+
+        <p>Using a video reference to drive a first frame.</p>
+
+        <ul>
+          <li><strong>LTX IC-LoRA Control</strong> didn't give very good results. Motion was acceptable for simple movements, but it wouldn't do lipsync, which had to be added afterwards. Discarded.</li>
+          <li><strong>WAN models</strong> didn't reach the level of detail or the frame rate the project needed.</li>
+        </ul>
+
+        <h4>2. Image + audio with prompted acting</h4>
+
+        <p><strong>LTX Image+Audio — this was the version used.</strong> Acting was prompted and kept very simple on all shots, though it still needed many iterations to get good results. The model's strengths were its ability to deliver acting and facial expressions on top of excellent lipsync. Body motion was handled by the prompt; likeness was handled by a character LoRA trained on Ozzy's exact likeness at the time of the concert.</p>
+
+        <div class="callout callout--warn">
+          <strong>Issues that persisted:</strong>
+          <ul>
+            <li>Lack of control over acting.</li>
+            <li>Couldn't stop him from grabbing a pen on the table — it had to be removed from the source image.</li>
+            <li>Hand tattoos were challenging. Ozzy wore several highly detailed rings that could not be made consistent with the current setup.</li>
+            <li>Acting varied between takes: sometimes too much smiling, sometimes weird expressions or head motions.</li>
+          </ul>
+        </div>
+
+        <h4>3. Face swap workflow</h4>
+
+        <p>A second refinement workflow was run on top of the generated videos. An LTX faceswap model using the character LoRA at higher resolution provided detail and likeness while keeping the motion, expressions, and acting intact.</p>
+
+        <h2 id="tech-stack">Tech Stack</h2>
+
+        <h3>External Providers</h3>
+
+        <table>
+          <thead>
+            <tr><th>Provider</th><th>Role</th><th>Verdict</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Wavespeed</strong></td>
+              <td>Access to most available inference models. Mostly used for static frame generation with NanoBanana, also for testing new models.</td>
+              <td>Kept</td>
+            </tr>
+            <tr>
+              <td><strong>ViewComfy</strong></td>
+              <td>API access to custom workflows including character LoRAs and fine-tuned values. Connected to the Airtable database for batch processing via n8n.</td>
+              <td>Too dependent on unresponsive tech support</td>
+            </tr>
+            <tr>
+              <td><strong>Airtable</strong></td>
+              <td>Hosts the shot list and its versions. Used for prompt refinement, iterative generation, running shot variants, and evaluation.</td>
+              <td>Kept</td>
+            </tr>
+            <tr>
+              <td><strong>n8n</strong></td>
+              <td>Automation layer for complex end-to-end workflows.</td>
+              <td>Kept</td>
+            </tr>
+            <tr>
+              <td><strong>RunPod</strong></td>
+              <td>Hosting for dedicated ComfyUI workflows.</td>
+              <td>Best and most economic option so far</td>
+            </tr>
+            <tr>
+              <td><strong>Griptape</strong></td>
+              <td>Orchestration tool.</td>
+              <td>Recently adopted</td>
+            </tr>
+            <tr>
+              <td><strong>RunComfy</strong></td>
+              <td>Character LoRA training. Fast, reliable API access to LoRAs and workflows.</td>
+              <td>Under evaluation</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Software</h3>
+
+        <ul>
+          <li>DaVinci Resolve Studio</li>
+          <li>Adobe Photoshop</li>
+          <li>Audacity</li>
+          <li>Shutter Encoder</li>
+          <li>Topaz Upscaler</li>
+        </ul>
+
+        <h3>Models</h3>
+
+        <ul>
+          <li><strong>NanoBanana</strong> — start image creation. Currently the best model for taking references, generating likeness, and prompt adherence. Used interactively.</li>
+          <li><strong>KREA</strong> — fast to train, used for dataset creation as an intermediate step. A LoRA trained on real images produced a fully synthetic, curated dataset of face angles, expressions, and phonemes. Better than NanoBanana for large datasets, since it can be trained and even run locally.</li>
+          <li><strong>LTX</strong> — the best model for realistic character creation. Character LoRAs trained on LTX have been excellent for likeness, even when trained on static material.</li>
+        </ul>
+
+        <h2 id="pipeline">Pipeline</h2>
+
+        <p>The same pipeline shown two ways. The SVG is vector — it stays sharp at any zoom, scales to the column width, and its text is selectable; it is also the larger file. The PNG is a fixed raster at 1536 × 1024 and will soften if enlarged past its native size.</p>
+
+        <figure class="diagram-wrap">
+          <img class="diagram-img diagram-img--wide" src="images/ai-video-generation-pipeline.svg" alt="AI video generation pipeline — vector diagram of the full shot pipeline from reference through delivery" />
+          <figcaption class="diagram-cap">SVG — vector, 2118 × 714, scales without loss.</figcaption>
+        </figure>
+
+        <figure class="diagram-wrap">
+          <img class="diagram-img diagram-img--wide" src="images/pipeline.png" alt="Pipeline overview — raster diagram" />
+          <figcaption class="diagram-cap">PNG — raster, 1536 × 1024, fixed resolution.</figcaption>
+        </figure>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../../../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-09-17</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../../../assets/js/site.js"></script>
+</body>
+</html>

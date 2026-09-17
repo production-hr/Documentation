@@ -6,22 +6,32 @@
 
   // ── Path helpers ──────────────────────────────────────────
 
-  function getDepth() {
-    var parts = window.location.pathname.replace(/^\//, '').split('/');
-    var last = parts[parts.length - 1];
-    if (last === '' || last.indexOf('.') !== -1) parts.pop();
-    return parts.length;
-  }
+  // Site root, derived from this script's own URL rather than from how deep the
+  // page sits under the domain root. Counting URL segments assumes the site is
+  // mounted at "/", which breaks on a GitHub Pages project site (served under
+  // /<repo>/) — every path climbs one level too far and the manifest 404s.
+  // Every page loads this file at assets/js/site.js, so stripping that suffix
+  // gives the root wherever the site is mounted.
+  var ROOT = (function () {
+    var src = document.currentScript && document.currentScript.src;
+    if (!src) {
+      var tags = document.getElementsByTagName('script');
+      for (var i = tags.length - 1; i >= 0; i--) {
+        if (tags[i].src && tags[i].src.indexOf('assets/js/site.js') !== -1) {
+          src = tags[i].src;
+          break;
+        }
+      }
+    }
+    return src ? src.replace(/assets\/js\/site\.js(\?.*)?$/, '') : '';
+  })();
 
   function manifestPath() {
-    var d = getDepth();
-    return d === 0 ? 'docs.json' : Array(d).fill('..').join('/') + '/docs.json';
+    return ROOT + 'docs.json';
   }
 
   function rel(href) {
-    var d = getDepth();
-    if (d === 0) return href;
-    return Array(d).fill('..').join('/') + '/' + href;
+    return ROOT + href;
   }
 
   function enc(s) { return encodeURIComponent(s); }

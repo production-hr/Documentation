@@ -799,6 +799,19 @@ h1.doc-title {
   background: var(--paper-deep);
   box-sizing: border-box;
 }
+/* Wide diagrams (schematics, pipeline charts) need the full prose column;
+   the 560px default is for portrait or square figures. */
+.diagram-img--wide {
+  max-width: 100%;
+  padding: 1rem;
+}
+.diagram-cap {
+  display: block;
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  font-style: italic;
+}
 
 /* --- Pipeline comparison grid --- */
 :root {
