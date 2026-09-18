@@ -20,7 +20,7 @@
         "ltx",
         "character"
       ],
-      "updated": "2026-09-17"
+      "updated": "2026-09-18"
     },
     {
       "id": "mj-2026-showcase",
@@ -29,15 +29,17 @@
       "subsection": "MJ 2026 Showcase",
       "category": "Post-Mortem",
       "file": "pages/Projects/MJ_2026_Showcase/mj-2026-showcase.html",
-      "excerpt": "Post-mortem on the MJ 2026 Showcase — approaches, stack, and outcomes.",
+      "excerpt": "Post-mortem on a one-minute, life-size AI dance performance for projection.",
       "tags": [
         "project",
         "mj",
         "post-mortem",
+        "scail",
         "lora",
-        "character"
+        "faceswap",
+        "griptape"
       ],
-      "updated": "2026-09-17"
+      "updated": "2026-09-18"
     },
     {
       "id": "rd-tools",

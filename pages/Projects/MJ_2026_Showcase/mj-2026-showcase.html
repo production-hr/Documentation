@@ -20,47 +20,139 @@
     <main class="main">
       <div class="doc-meta">
         <span>Projects · MJ 2026 Showcase</span>
-        <span>2026-09-17</span>
+        <span>2026-09-18</span>
       </div>
 
       <h1 class="doc-title">MJ 2026 Showcase</h1>
 
-      <p class="doc-lede">Post-mortem on the MJ 2026 Showcase — what was proposed, which approaches failed, and what shipped.</p>
+      <p class="doc-lede">Post-mortem on a one-minute, life-size AI dance performance of Michael Jackson — motion transfer, two-level LoRAs, and a tracked face pass.</p>
 
       <article class="prose">
 
         <ol>
-          <li><a href="#sequences">Sequences</a></li>
-          <li><a href="#production">Production</a></li>
+          <li><a href="#dancing-sequence">MJ Dancing Sequence</a></li>
           <li><a href="#tech-stack">Tech Stack</a></li>
           <li><a href="#pipeline">Pipeline</a></li>
         </ol>
 
         <hr>
 
-        <p class="dropcap">The MJ 2026 Showcase is the second character project through the AI pipeline, following Ozzy. Its structure here deliberately mirrors the Ozzy post-mortem so the two can be read against each other — same section order, same questions asked of each stage. That comparison is the point: Ozzy established the baseline, and this project is where the pipeline changes get measured.</p>
+        <p class="dropcap">The objective was a life-size video of Michael Jackson dancing, to be tested on a projection screen. It had to be more detailed and more realistic than previous iterations, and it had to run for a full minute — which turned out to be the hardest constraint of all. One minute of uninterrupted, fast, full-body motion is well beyond what most video models hold together, so the project became a study in keeping a character, a costume, and a face consistent across a single long take.</p>
 
-        <div class="callout callout--note">
-          <strong>This page is an outline.</strong> The sections below are placeholders awaiting content and media.
+        <h2 id="dancing-sequence">MJ Dancing Sequence</h2>
+
+        <h3>Preproduction</h3>
+
+        <p>For the motion, a video and motion-capture session was run with two different dancers. The mocap material was never used: there wasn't time to clean it up, transfer it, and render it. Everything downstream was driven by the reference video instead — and that footage had problems worth designing out of the next shoot.</p>
+
+        <ul>
+          <li>The dancers had a green screen behind them, but moved out of it.</li>
+          <li>The green screen itself is unnecessary for AI. A grey screen is the better choice now.</li>
+          <li>Both dancers had very different body proportions from MJ.</li>
+          <li>One dancer wore baggy pants and oversized clothing, the other hanging pants. Fitted clothes transfer far better through AI motion transfer.</li>
+        </ul>
+
+        <h3>Production</h3>
+
+        <h4>1. Video to video</h4>
+
+        <p>A video reference drives a first frame of MJ. Three model families were tried for the motion transfer:</p>
+
+        <ul>
+          <li><strong>LTX IC-LoRA Control</strong> — as on previous projects, it didn't give good results for fast, complex body motion.</li>
+          <li><strong>WAN ControlNet models</strong> — captured the motion very well, but are limited to 16 fps. An interpolation node doubling the frame rate solved that.</li>
+          <li><strong>WAN SCAIL</strong> — although dated, the best option. It captured the motion perfectly and held it consistently.</li>
+        </ul>
+
+        <p>The <strong>SCAIL Infinity</strong> node made the full one-minute generation possible, with minimal decay in the character or the costume across the take.</p>
+
+        <div class="callout callout--warn">
+          <strong>The unsolved problem:</strong> after about 20 seconds, SCAIL Infinity starts to show lighting changes and colour bleeding from the background. It was fixed in postproduction, but it remains the biggest issue in the pipeline.
         </div>
 
-        <h2 id="sequences">Sequences</h2>
-        <p>What was proposed, what was cut, and the final durations.</p>
+        <h4>2. LoRA training</h4>
 
-        <h2 id="production">Production</h2>
-        <p>Approaches tried, which were discarded and why, and which one shipped.</p>
+        <p>Identity was split across two LoRAs, each doing the job the other couldn't:</p>
+
+        <ul>
+          <li><strong>Body LoRA.</strong> A SCAIL LoRA trained on the exact costume needed for the performance and added to the motion model. Good at HD resolution — but at full-body framing, the face lacked detail.</li>
+          <li><strong>Head LoRA.</strong> A two-level <a href="../../pipeline/lora-training/ltx-23/ltx-23.html">LTX 2.3 LoRA</a> trained on MJ's face, capturing his exact look, facial features, and hairstyle. Applied on a second pass.</li>
+        </ul>
+
+        <h4>3. Face swap workflow</h4>
+
+        <p>A custom Griptape node tracked the face and exported it as a cropped video. That crop was upscaled and run through LTX Faceswap with the head LoRA to enhance likeness.</p>
+
+        <p>The faceswap's main weakness is that it loses consistency on fast motion — the default condition for a dance piece. The tracking step turned out to fix that almost by accident: because tracking the head also stabilises it, the faceswap received a steady, centred face instead of a fast-moving one, and the result was dramatically better.</p>
+
+        <p>The character LoRA also handled one of the hardest problems in the whole project: hair. MJ's hair looked natural, the strands falling over his face stayed consistent, and their motion was realistic.</p>
+
+        <p>Finally, the same Griptape tracking node composited the refined face back onto the original performance, using the positions stored during tracking.</p>
+
+        <div class="callout callout--note">
+          <strong>Compared with Ozzy:</strong> the <a href="../Ozzy/ozzy.html">Ozzy sequences</a> were image-plus-audio with prompted acting, so motion was never the constraint. Here the problem inverted — motion was given by the dancer, and the work was in holding identity through it.
+        </div>
 
         <h2 id="tech-stack">Tech Stack</h2>
-        <p>External providers, software, and models — including anything that changed since Ozzy.</p>
+
+        <h3>External Providers</h3>
+
+        <table>
+          <thead>
+            <tr><th>Provider</th><th>Role</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Wavespeed</strong></td>
+              <td>Access to most available inference models. Mostly used for static frame generation with NanoBanana, and for testing new models.</td>
+            </tr>
+            <tr>
+              <td><strong>Runpod</strong></td>
+              <td>Hosting for dedicated ComfyUI workflows — so far the best and most economic option.</td>
+            </tr>
+            <tr>
+              <td><strong>Griptape</strong></td>
+              <td>Orchestration. Building custom Griptape nodes for the face tracking and compositing proved incredibly useful.</td>
+            </tr>
+            <tr>
+              <td><strong>Runcomfy</strong></td>
+              <td>Character LoRA training.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>Software</h3>
+
+        <ul>
+          <li>DaVinci Resolve Studio</li>
+          <li>Adobe Photoshop</li>
+          <li>Shutter Encoder</li>
+          <li>Topaz Upscaler</li>
+          <li>Griptape Nodes</li>
+        </ul>
+
+        <h3>Models</h3>
+
+        <ul>
+          <li><strong>NanoBanana</strong> — start image creation. Currently the best model for taking references, generating likeness, and prompt adherence. Used interactively.</li>
+          <li><strong>WAN SCAIL</strong> — still one of the best models for motion transfer. Combined with a LoRA, the results were excellent, and the SCAIL Infinity node delivered long generations with minimal character drift.</li>
+          <li><strong>KREA</strong> — fast to train, used for dataset creation as an intermediate step. A LoRA trained on real images produced a fully synthetic, curated dataset of face angles, expressions, and phonemes. Better than NanoBanana for large datasets, since it can be trained and even run locally.</li>
+          <li><strong>LTX</strong> — the best model for realistic character creation. Character LoRAs trained on LTX have been excellent for likeness, even when trained on static material.</li>
+        </ul>
 
         <h2 id="pipeline">Pipeline</h2>
-        <p>Pipeline diagram and stage-by-stage description.</p>
+
+        <p>Two LoRAs are trained ahead of production. The dancer's performance drives a motion transfer on Runpod, which is upscaled, then handed to Griptape to track and isolate the face. The face crop is refined on Runpod with the head LoRA and composited back onto the performance using the stored tracking data.</p>
+
+        <div class="callout callout--note">
+          <strong>Diagram pending.</strong> The pipeline graph is being redone.
+        </div>
 
       </article>
 
       <footer class="doc-footer">
         <span><a href="../../../index.html">← Back to index</a></span>
-        <span>Last updated: 2026-09-17</span>
+        <span>Last updated: 2026-09-18</span>
       </footer>
     </main>
   </div>
