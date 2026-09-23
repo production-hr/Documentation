@@ -42,6 +42,26 @@
       "updated": "2026-09-18"
     },
     {
+      "id": "4d-character-pipeline",
+      "title": "4D Character Pipeline — Unreal Dome + AI Likeness",
+      "section": "RD",
+      "subsection": "Gaussian Splats",
+      "category": "4D",
+      "file": "pages/rd/gaussian-splats/4d-character-pipeline.html",
+      "excerpt": "Volumetric character capture from a rendered Unreal camera dome with a V2V likeness layer.",
+      "tags": [
+        "4dgs",
+        "gaussian",
+        "splat",
+        "unreal",
+        "metahuman",
+        "lora",
+        "v2v",
+        "volumetric"
+      ],
+      "updated": "2026-09-23"
+    },
+    {
       "id": "rd-tools",
       "title": "R&D Tools for Production",
       "section": "Pipeline",

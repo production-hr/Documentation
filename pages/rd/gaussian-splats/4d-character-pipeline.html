@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>4D Character Pipeline — Archive</title>
+  <link rel="stylesheet" href="../../../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='80' font-size='80' font-family='Georgia,serif' font-weight='bold' fill='%23b4391c'%3E§%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a href="../../../index.html" class="brand">
+        <div class="brand__title">Archive</div>
+        <div class="brand__subtitle">Documentation</div>
+      </a>
+      <nav data-nav></nav>
+    </aside>
+
+    <main class="main">
+      <div class="doc-meta">
+        <span>RD · Gaussian Splats</span>
+        <span>2026-09-23</span>
+      </div>
+
+      <h1 class="doc-title">4D Character Pipeline — Unreal Dome + AI Likeness</h1>
+
+      <p class="doc-lede">Building a photoreal volumetric character from a synthetic camera dome, where a mocap-driven MetaHuman carries the geometry and a V2V AI layer supplies the likeness.</p>
+
+      <article class="prose">
+
+        <ol>
+          <li><a href="#ali-test">What the Ali test proved</a></li>
+          <li><a href="#pipeline">Pipeline</a></li>
+          <li><a href="#dome">What the synthetic dome gives us</a></li>
+          <li><a href="#v2v">The V2V likeness layer</a></li>
+          <li><a href="#consistency">The central risk: multi-view consistency</a></li>
+          <li><a href="#reconstruction">Reconstruction approach</a></li>
+          <li><a href="#landscape">4DGS training landscape</a></li>
+          <li><a href="#sizing">Sizing</a></li>
+          <li><a href="#pilot">Pilot</a></li>
+          <li><a href="#open-decisions">Open decisions</a></li>
+          <li><a href="#sources">Sources</a></li>
+        </ol>
+
+        <hr>
+
+        <p class="dropcap">We build a photoreal volumetric character by splitting the likeness problem in two: a mocap-driven MetaHuman carries roughly 75% of it, and a video-to-video AI pass with a trained character LoRA supplies the remaining 25%. The capture rig is synthetic — instead of filming a real performer in a physical camera dome, we render a dome of virtual cameras around the animated character in Unreal Engine. Those renders go through the V2V layer, and the enhanced multi-view footage is what we reconstruct into a Gaussian splat.</p>
+
+        <figure class="diagram-wrap">
+          <img class="diagram-img diagram-img--wide" src="images/metahuman-ai-split.jpg" alt="A single head split vertically — untextured CG clay with visible wireframe on the left, photorealistic skin on the right" />
+          <figcaption class="diagram-cap">The 75/25 split — MetaHuman base on the left, AI likeness layer on the right.</figcaption>
+        </figure>
+
+        <p>This inverts the usual volumetric video problem. Conventional 4D Gaussian Splatting spends most of its effort recovering geometry and motion from imperfect real footage. Here geometry and motion are already exact and free — the open question is whether the AI appearance layer agrees with itself across viewpoints.</p>
+
+        <h2 id="ali-test">What the Ali test proved</h2>
+
+        <p>We have run a reduced version of this pipeline: a Muhammad Ali reconstruction over a 360° turnaround of synthetic H3 data, one camera orbit, using prompted rather than guided conditioning. It turned out well.</p>
+
+        <figure class="diagram-wrap">
+          <img class="diagram-img diagram-img--wide" src="images/ali-splat.jpg" alt="The Ali reconstruction shown in a splat viewer, standing on a grid floor with world axes visible" />
+          <figcaption class="diagram-cap">The Ali splat in the viewer — a single 360° orbit of synthetic H3 data, prompted conditioning only.</figcaption>
+        </figure>
+
+        <p>That result is the reason this project is worth building, and it sets the baseline:</p>
+
+        <ul>
+          <li>A single orbit was enough to reconstruct from. We did not need a dense dome to get a usable result.</li>
+          <li>The source data was synthetic, so the same render-then-enhance ordering already worked end to end.</li>
+          <li>Conditioning was <strong>prompted only</strong>. There was no depth, normal or ID guidance holding the AI to the underlying geometry, and no LoRA locking the identity.</li>
+        </ul>
+
+        <p>The headroom is in exactly those two gaps. Adding a well-trained character LoRA plus guided conditioning and a mixed denoise schedule should raise cross-view stability well above what the Ali test achieved, because both changes reduce how much the model is free to invent per frame. The working assumption is that a good LoRA alone gets flickering down to a minimal level — but that assumption is untested at dome density and with a moving subject.</p>
+
+        <h2 id="pipeline">Pipeline</h2>
+
+        <p>Six stages, from mocap to a playable volumetric asset. The appearance branch carries all the risk; the geometry branch comes straight out of the renderer and is essentially free and exact.</p>
+
+        <ol>
+          <li><strong>Mocap</strong> drives the MetaHuman rig in Unreal.</li>
+          <li><strong>Dome render</strong> through Movie Render Queue: beauty pass per camera, plus depth, normal and object-ID AOVs, on a transparent background.</li>
+          <li><strong>V2V pass</strong> applies the character LoRA to each camera's footage, conditioned on that camera's AOVs.</li>
+          <li><strong>Dataset assembly</strong> converts Unreal camera transforms directly into <code>transforms.json</code> or COLMAP text files. No structure-from-motion step.</li>
+          <li><strong>Training</strong> fits either a mesh-bound Gaussian avatar or a generic 4DGS model.</li>
+          <li><strong>Delivery</strong> to a viewer, engine or headset.</li>
+        </ol>
+
+        <h2 id="dome">What the synthetic dome gives us</h2>
+
+        <p>Every item below is a problem that physical volumetric capture rigs spend real money solving, and that we get as a side effect of rendering.</p>
+
+        <figure class="diagram-wrap">
+          <img class="diagram-img diagram-img--wide" src="images/camera-dome.jpg" alt="A hemisphere of glowing wireframe camera frustums arranged around a single figure standing at the centre" />
+          <figcaption class="diagram-cap">A dome of virtual cameras around the animated character — rendered rather than built.</figcaption>
+        </figure>
+
+        <table>
+          <thead>
+            <tr><th>Asset</th><th>How we get it</th><th>What it replaces</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Exact camera intrinsics and extrinsics</td><td>Exported from Sequencer / Movie Render Queue</td><td>The whole COLMAP + GLOMAP stage, and all its failure modes</td></tr>
+            <tr><td>Perfect frame sync</td><td>Rendered, not filmed</td><td>Genlock hardware, timecode, rolling-shutter correction</td></tr>
+            <tr><td>Alpha mattes</td><td>Transparent-background render</td><td>SAM or greenscreen keying per frame</td></tr>
+            <tr><td>Depth, normal and object-ID passes</td><td>AOVs from the same render</td><td>Monocular depth estimation, and the conditioning for the V2V pass</td></tr>
+            <tr><td>Exact per-frame mesh</td><td>The MetaHuman itself</td><td>The motion half of 4D reconstruction</td></tr>
+            <tr><td>Arbitrary camera count and placement</td><td>A parameter, not a purchase</td><td>An $80k physical rig</td></tr>
+          </tbody>
+        </table>
+
+        <p>Two consequences worth calling out. The alpha mattes drop straight into an existing nerfstudio invocation, which already accepts <code>--masks-path masks</code>. And because the per-frame mesh is exact, generic 4DGS would be solving for motion we already know.</p>
+
+        <p>Three coordinate conventions meet in this pipeline and none of them agree. Unreal is Z-up left-handed with X forward. nerfstudio uses OpenGL — +X right, +Y up, +Z pointing back, so −Z is the look-at direction. COLMAP uses OpenCV, with Y and Z flipped relative to nerfstudio.</p>
+
+        <div class="callout callout--warn">
+          <p>Getting the conversion wrong produces a splat that trains without error and looks like mush, mirrored, or inside out. Verify on a single static frame with an obviously asymmetric prop before rendering anything long.</p>
+        </div>
+
+        <h2 id="v2v">The V2V likeness layer</h2>
+
+        <p>The LoRA's job is narrow: carry identity, not style. Everything the LoRA does not have to invent is one less thing that can differ between two cameras looking at the same instant.</p>
+
+        <p><strong>LoRA training.</strong> In preparation. The critical property is not peak fidelity on a single hero frame but stability across pose and angle — a LoRA that renders a convincing three-quarter view and a different-looking profile is worse here than one that is slightly softer but agrees with itself everywhere.</p>
+
+        <p><strong>Guided rather than prompted.</strong> The Ali test ran on prompts alone. This project feeds the renderer's own AOVs back in as structural conditioning — depth, normals and object ID per camera. Those passes cost nothing extra and they pin the AI to geometry that is, by construction, already multi-view consistent.</p>
+
+        <p><strong>Mixed denoise.</strong> Rather than one global strength, vary it by region:</p>
+
+        <ul>
+          <li>Low strength where geometry must not move and where the eye is least forgiving: face silhouette, eyes, mouth line.</li>
+          <li>Higher strength where the MetaHuman is weakest and invention is welcome: skin micro-detail, pore and blemish structure, hair breakup, fabric grain.</li>
+        </ul>
+
+        <p>The object-ID AOV gives us these regions as clean masks for free, so the schedule can be authored per material rather than hand-rotoscoped.</p>
+
+        <p><strong>Determinism.</strong> Fixed seed across the whole dome, shared latent initialisation, and identical sampler settings per camera. This does not guarantee 3D consistency — nothing at the 2D level does — but it removes a large source of gratuitous variance between neighbouring views.</p>
+
+        <h2 id="consistency">The central risk: multi-view consistency</h2>
+
+        <p>This is the one thing that decides whether the project works.</p>
+
+        <figure class="diagram-wrap">
+          <img class="diagram-img diagram-img--wide" src="images/multiview-consistency.jpg" alt="A grid of nine slightly different head renders feeding into one reconstruction built from soft translucent blobs, blurred around the eyes and hairline" />
+          <figcaption class="diagram-cap">Views that disagree average into a smeared reconstruction, worst at the eyes and hairline.</figcaption>
+        </figure>
+
+        <p>Run V2V independently per camera and each view invents its own version of the 25%. Different hair strands, different pore structure, a subtly different jawline and eye shape per camera. Splat training then receives N mutually contradictory observations of the same instant and does the only thing it can: it averages them. The result is soft and ghosted exactly where likeness lives. Expect eyes and hair to fail first.</p>
+
+        <div class="callout callout--note">
+          <p>This is a different failure from temporal flicker. A LoRA that eliminates frame-to-frame flicker on one camera has not necessarily made two cameras agree with each other at one instant. Temporal stability is necessary here but not sufficient.</p>
+        </div>
+
+        <p>Ranked strategies, most to least reliable:</p>
+
+        <ol>
+          <li><strong>Texture-space (UV) baking.</strong> Run the LoRA once in UV space, bake into the MetaHuman's textures, then render the dome from the enhanced asset. Consistency is guaranteed by construction because there is only one source of truth. Cost: no view-dependent response, and hair does not live in UV space cleanly.</li>
+          <li><strong>Heavy structural conditioning at low denoise.</strong> The thinner the AI pass, the more the views agree by default. Stacks with option 1.</li>
+          <li><strong>Batched cross-view attention.</strong> Push several dome views through the diffusion model in one batch so they share attention, rather than N independent runs. This is where the current literature is.</li>
+          <li><strong>Accept it and let the splat average.</strong> Often acceptable for body and clothing. Rarely acceptable for the face.</li>
+        </ol>
+
+        <p>These are not exclusive. The likely production answer is 1 for the face, 2 everywhere, with 3 as the upgrade path.</p>
+
+        <h2 id="reconstruction">Reconstruction approach</h2>
+
+        <p><strong>Recommendation: try mesh-bound Gaussians first.</strong> Because we have the exact animated mesh on every frame, generic 4DGS would burn most of its capacity learning motion we already know exactly.</p>
+
+        <p><strong>Option A — mesh-bound Gaussians.</strong> Bind Gaussians to the triangles of the MetaHuman mesh; each Gaussian translates, rotates and scales with its parent triangle. This is the GaussianAvatars formulation, and 3DGS-Avatar and RMAvatar cover full-body variants.</p>
+
+        <ul>
+          <li>Train once, then drive with any mocap. No retraining per take.</li>
+          <li>Motion is exact, so training solves appearance only — far fewer cameras and far fewer V2V frames needed.</li>
+          <li>The deliverable is a riggable asset, not a baked clip.</li>
+          <li>Weak spot: long hair and loose clothing that do not follow the mesh.</li>
+        </ul>
+
+        <p><strong>Option B — generic 4DGS.</strong> Use if the deliverable is a baked volumetric clip of a specific performance. FreeTimeGsVanilla is the pick: it is built on gsplat, so it reuses the CUDA/MSVC toolchain already configured for sm_89.</p>
+
+        <ul>
+          <li>Handles hair, cloth and anything else that moves independently of the mesh.</li>
+          <li>Must be retrained for every take.</li>
+          <li>Output is a clip, with the file-size and streaming problems that implies.</li>
+        </ul>
+
+        <p>The honest split: <strong>A if the deliverable is an asset, B if it is footage.</strong></p>
+
+        <h2 id="landscape">4DGS training landscape</h2>
+
+        <p>For reference, the methods worth knowing if we go the generic-4DGS route. All assume multi-view synced input, which our dome provides by construction.</p>
+
+        <table>
+          <thead>
+            <tr><th>Method</th><th>Approach</th><th>Fit</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>FreeTimeGS (CVPR'25)</td><td>Gaussians free to appear at any time and place, each with its own motion</td><td>Best pick. Vanilla implementation built on gsplat. Basis of 4DV.ai's product. Quoted at 450 fps / 1080p on a single 4090</td></tr>
+            <tr><td>SpacetimeGaussians (CVPR'24)</td><td>Gaussians with a lifespan in time, polynomial motion, features instead of SH</td><td>Strong quality. Repo recommends WSL2 on Windows</td></tr>
+            <tr><td>4DGaussians (CVPR'24)</td><td>Static splat + HexPlane deformation field</td><td>Most documented entry point. Weak when objects appear or disappear</td></tr>
+            <tr><td>Real-time 4DGS (ICLR'24)</td><td>Native 4D Gaussians rotating in space and time</td><td>Handles birth and death better than deformation-field methods</td></tr>
+            <tr><td>4C4D (CVPR'26)</td><td>4DGS from only 4 cameras, MASt3R priors</td><td>Not needed — our camera count is free</td></tr>
+            <tr><td>Per-frame 3DGS</td><td>One splat per frame, warm-started from the previous</td><td>Zero-research baseline. Flickers, large files</td></tr>
+          </tbody>
+        </table>
+
+        <p>There is still no standard 4DGS file format. Every method writes its own, and MPEG's Gaussian-splat coding work is not settled. Confirm the playback target before committing to a trainer.</p>
+
+        <h2 id="sizing">Sizing</h2>
+
+        <p>The instinct is to worry about GPU memory and training time. The real constraint is the number of diffusion frames, which scales with cameras × duration × frame rate.</p>
+
+        <table>
+          <thead>
+            <tr><th>Cameras</th><th>10 s at 24 fps</th><th>Note</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>8</td><td>1,920 frames</td><td>Pilot scale</td></tr>
+            <tr><td>16</td><td>3,840 frames</td><td>Practical floor for a full dome</td></tr>
+            <tr><td>24</td><td>5,760 frames</td><td>Research-standard density</td></tr>
+            <tr><td>60</td><td>14,400 frames</td><td>Physical-rig density, hard to justify here</td></tr>
+          </tbody>
+        </table>
+
+        <p>Camera count is a V2V budget decision, not a rendering one. Unreal will happily give us 60 views; the diffusion pass is what makes us not want them. This is the second argument for mesh-bound Gaussians — if motion comes from the rig, appearance can be solved from a much smaller set of views.</p>
+
+        <p>On the training side, 24 GB is adequate for short clips at 1080p. Longer performances need chunking.</p>
+
+        <h2 id="pilot">Pilot</h2>
+
+        <p>Build this before building the dome. It costs an afternoon and it answers the only question that can kill the project. One static frame, eight cameras on a short arc rather than a full dome, and the LoRA as it stands.</p>
+
+        <ol>
+          <li>Render the 8 views with beauty, depth, normal and ID AOVs, transparent background.</li>
+          <li>Verify the Unreal → nerfstudio/COLMAP transform on this frame, using an asymmetric prop to catch mirroring.</li>
+          <li>Run the V2V pass on all 8 — fixed seed, guided conditioning, mixed denoise.</li>
+          <li>Inspect the 8 outputs side by side before training anything.</li>
+          <li>Train a plain <code>splatfacto</code> on the 8 enhanced views.</li>
+          <li>Compare against a control splat trained on the 8 raw Unreal views.</li>
+        </ol>
+
+        <p>If the face comes out sharp and close to the control, the consistency assumption holds and everything downstream is engineering. If it comes out soft, we know on day one that the LoRA alone is not enough — before committing to a full dome render and thousands of V2V frames.</p>
+
+        <p>The control splat matters. It separates "the AI layer disagrees with itself" from "eight views is simply too few", which otherwise look identical. If the first pilot passes, repeat with motion, since temporal and cross-view consistency are different problems.</p>
+
+        <h2 id="open-decisions">Open decisions</h2>
+
+        <table>
+          <thead>
+            <tr><th>Question</th><th>Why it matters</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Riggable asset or baked clips?</td><td>Decides Option A vs Option B outright</td></tr>
+            <tr><td>Full body, or head and shoulders?</td><td>Long hair and loose costume are the mesh-bound approach's weak spot</td></tr>
+            <tr><td>Playback target — browser, engine, or headset?</td><td>No standard format exists; the target constrains the trainer</td></tr>
+            <tr><td>Does the LoRA alone carry cross-view consistency?</td><td>The pilot answers this. Everything else is contingent on it</td></tr>
+            <tr><td>Bake to UV, or stay in screen space?</td><td>The strongest consistency guarantee, but costs view-dependent response</td></tr>
+            <tr><td>How long is a single performance?</td><td>Sets chunking strategy and whether 24 GB holds</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="sources">Sources</h2>
+
+        <p><strong>4DGS methods</strong> — <a href="https://zju3dv.github.io/freetimegs/">FreeTimeGS</a>, <a href="https://github.com/OpsiClear-4DGS/FreeTimeGsVanilla">FreeTimeGsVanilla</a>, <a href="https://github.com/oppo-us-research/SpacetimeGaussians">SpacetimeGaussians</a>, <a href="https://arxiv.org/abs/2310.08528">4D-GS (Wu et al.)</a>, <a href="https://fudan-zvg.github.io/4d-gaussian-splatting/">Real-time 4DGS</a>, <a href="https://github.com/yangzf-1023/4C4D">4C4D</a>, <a href="https://github.com/qianx77/Awesome-4DGS">Awesome-4DGS</a></p>
+
+        <p><strong>Mesh-bound avatars</strong> — <a href="https://openaccess.thecvf.com/content/CVPR2024/papers/Qian_GaussianAvatars_Photorealistic_Head_Avatars_with_Rigged_3D_Gaussians_CVPR_2024_paper.pdf">GaussianAvatars</a>, <a href="https://github.com/mikeqzy/3dgs-avatar-release">3DGS-Avatar</a>, <a href="https://arxiv.org/pdf/2501.07104">RMAvatar</a></p>
+
+        <p><strong>Multi-view consistent diffusion</strong> — <a href="https://arxiv.org/html/2510.14179v1">Virtually Being</a>, <a href="https://arxiv.org/pdf/2510.13702">MVCustom</a></p>
+
+        <p><strong>Tooling</strong> — <a href="https://docs.nerf.studio/quickstart/data_conventions.html">nerfstudio data conventions</a>, <a href="https://dev.epicgames.com/documentation/en-us/unreal-engine/movie-render-pipeline-in-unreal-engine">Unreal Movie Render Pipeline</a>, <a href="https://radiancefields.com/4d-gaussian-splatting">radiancefields.com 4DGS survey</a></p>
+
+        <p>Illustrations generated with Seedream 5.0 Pro.</p>
+
+      </article>
+
+      <footer class="doc-footer">
+        <span><a href="../../../index.html">← Back to index</a></span>
+        <span>Last updated: 2026-09-23</span>
+      </footer>
+    </main>
+  </div>
+
+  <script src="../../../assets/js/site.js"></script>
+</body>
+</html>
