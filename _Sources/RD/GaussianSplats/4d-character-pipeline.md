@@ -64,7 +64,9 @@ Three coordinate conventions meet in this pipeline and none of them agree: Unrea
 
 This is already solved for us. `Unreal2Nerfstudio.py` ([production-hr/Unreal2NerfstudioCameras](https://github.com/production-hr/Unreal2NerfstudioCameras)) runs inside the Unreal editor, walks a Level Sequence frame by frame, and writes `transforms.json` directly. It builds each camera-to-world matrix from the camera's forward, right and up vectors with an explicit axis remap — UE Z → NS X, UE X → NS Y, UE −Y → NS Z — converts centimetres to metres, derives `fl_x` from the CineCamera's horizontal field of view, and tags the output `camera_model: "OPENCV"`.
 
-One gap to close: the script exports **one camera across a range of frames** — exactly the single-orbit case the Ali test used. A dome needs the inverse loop, many cameras at one instant, repeated per frame. Extending it is the first concrete piece of pipeline work.
+The dome itself lives in the sequence. Rather than placing and managing N independent camera actors, the dome positions are keyframed onto a single camera, so every sequence frame is a different viewpoint. That is simpler to author, and it is what the Ali turnaround already used.
+
+For 4D it leaves one thing to settle: the camera sweep and the character's performance both advance along sequence time, but splat training needs a set of views of a *single* instant. So camera time and animation time have to be decoupled — one full dome sweep per frozen step of the performance.
 
 > **Warning:** Get the conversion wrong and the splat trains without error but looks like mush, mirrored, or inside out. Verify on a single static frame with an obviously asymmetric prop before rendering anything long.
 
