@@ -81,7 +81,7 @@
           <li><strong>Mocap</strong> drives the MetaHuman rig in Unreal.</li>
           <li><strong>Dome render</strong> through Movie Render Queue: beauty pass per camera, plus depth, normal and object-ID AOVs, on a transparent background.</li>
           <li><strong>V2V pass</strong> applies the character LoRA to each camera's footage, conditioned on that camera's AOVs.</li>
-          <li><strong>Dataset assembly</strong> converts Unreal camera transforms directly into <code>transforms.json</code> or COLMAP text files. No structure-from-motion step.</li>
+          <li><strong>Dataset assembly</strong> exports Unreal camera transforms straight to <code>transforms.json</code> via <code>Unreal2Nerfstudio.py</code>. No structure-from-motion step.</li>
           <li><strong>Training</strong> fits either a mesh-bound Gaussian avatar or a generic 4DGS model.</li>
           <li><strong>Delivery</strong> to a viewer, engine or headset.</li>
         </ol>
@@ -113,8 +113,12 @@
 
         <p>Three coordinate conventions meet in this pipeline and none of them agree. Unreal is Z-up left-handed with X forward. nerfstudio uses OpenGL — +X right, +Y up, +Z pointing back, so −Z is the look-at direction. COLMAP uses OpenCV, with Y and Z flipped relative to nerfstudio.</p>
 
+        <p>This is already solved for us. <code>Unreal2Nerfstudio.py</code> (<a href="https://github.com/production-hr/Unreal2NerfstudioCameras">production-hr/Unreal2NerfstudioCameras</a>) runs inside the Unreal editor, walks a Level Sequence frame by frame, and writes <code>transforms.json</code> directly. It builds each camera-to-world matrix from the camera's forward, right and up vectors with an explicit axis remap — UE Z → NS X, UE X → NS Y, UE −Y → NS Z — converts centimetres to metres, derives <code>fl_x</code> from the CineCamera's horizontal field of view, and tags the output <code>camera_model: "OPENCV"</code>.</p>
+
+        <p>One gap to close: the script exports <strong>one camera across a range of frames</strong> — exactly the single-orbit case the Ali test used. A dome needs the inverse loop, many cameras at one instant, repeated per frame. Extending it is the first concrete piece of pipeline work.</p>
+
         <div class="callout callout--warn">
-          <p>Getting the conversion wrong produces a splat that trains without error and looks like mush, mirrored, or inside out. Verify on a single static frame with an obviously asymmetric prop before rendering anything long.</p>
+          <p>Get the conversion wrong and the splat trains without error but looks like mush, mirrored, or inside out. Verify on a single static frame with an obviously asymmetric prop before rendering anything long.</p>
         </div>
 
         <h2 id="v2v">The V2V likeness layer</h2>
@@ -266,7 +270,7 @@
 
         <p><strong>Multi-view consistent diffusion</strong> — <a href="https://arxiv.org/html/2510.14179v1">Virtually Being</a>, <a href="https://arxiv.org/pdf/2510.13702">MVCustom</a></p>
 
-        <p><strong>Tooling</strong> — <a href="https://docs.nerf.studio/quickstart/data_conventions.html">nerfstudio data conventions</a>, <a href="https://dev.epicgames.com/documentation/en-us/unreal-engine/movie-render-pipeline-in-unreal-engine">Unreal Movie Render Pipeline</a>, <a href="https://radiancefields.com/4d-gaussian-splatting">radiancefields.com 4DGS survey</a></p>
+        <p><strong>Tooling</strong> — <a href="https://github.com/production-hr/Unreal2NerfstudioCameras">Unreal2NerfstudioCameras</a> (our UE camera export script), <a href="https://docs.nerf.studio/quickstart/data_conventions.html">nerfstudio data conventions</a>, <a href="https://dev.epicgames.com/documentation/en-us/unreal-engine/movie-render-pipeline-in-unreal-engine">Unreal Movie Render Pipeline</a>, <a href="https://radiancefields.com/4d-gaussian-splatting">radiancefields.com 4DGS survey</a></p>
 
         <p>Illustrations generated with Seedream 5.0 Pro.</p>
 
